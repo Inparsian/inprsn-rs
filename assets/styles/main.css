@@ -1,0 +1,183 @@
+/* App-wide styling */
+@keyframes window-in {
+    from {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes window-out {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    to {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+}
+
+body {
+    background-color: #131313;
+    color: #e2e2e2;
+    font-family: 'Tamzen', monospace;
+    
+    /* Prevent the browser from smoothing the pixels */
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    
+    /* Ensure the font sits exactly on the pixel grid */
+    text-rendering: optimizeSpeed;
+    
+    a {
+        color: #888;
+        text-decoration: underline;
+        
+        &:hover,&:focus {
+            cursor: pointer;
+            color: #ccc;
+        }
+    }
+}
+
+.desktop {
+    position: absolute;
+    z-index: 10;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.window {
+    &:not(.focused) {
+        z-index: 40;
+        .window-inner {
+            filter: brightness(0.66);
+        }
+    }
+    
+    &.focused {
+        z-index: 50;
+    }
+    
+    &:not(.closing) .window-inner {
+        @media not (prefers-reduced-motion: reduce) {
+            animation: window-in 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    }
+    
+    &.closing .window-inner {
+        @media not (prefers-reduced-motion: reduce) {
+            animation: window-out 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    }
+    
+    .window-inner {
+        @media not (prefers-reduced-motion: reduce) {
+            transition: filter 150ms ease-out;
+        }
+        
+        width: 100%;
+        height: 100%;
+        border: #323232 1px solid;
+        
+        .window-title-bar {
+            user-select: none;
+            background: #444;
+            min-height: 28px;
+            max-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            
+            .window-title-bar-draggable {
+                padding: 4px;
+                width: 100%;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+            
+            .window-title-bar-buttons {
+                padding-right: 8px;
+                button {
+                    height: 12px;
+                    width: 12px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    
+                    &#close {
+                        background: #e24444;
+                    }
+                }
+            }
+        }
+        
+        .window-content {
+            width: 100%;
+            overflow: hidden;
+            height: calc(100% - 28px);
+            background: #131313;
+            overflow: scroll;
+        }
+        
+        .window-corner {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            
+            &.top-left {
+                top: 0;
+                left: 0;
+                cursor: nw-resize;
+            }
+            
+            &.top-right {
+                top: 0;
+                right: 0;
+                cursor: ne-resize;
+            }
+            
+            &.bottom-left {
+                bottom: 0;
+                left: 0;
+                cursor: sw-resize;
+            }
+            
+            &.bottom-right {
+                bottom: 0;
+                right: 0;
+                cursor: se-resize;
+            }
+        }
+    }
+}
+
+#about-container {
+    container-type: inline-size;
+    container-name: main;
+    
+    #about-content {
+        display: flex;
+        @container main (width > 450px) {
+            flex-direction: row;
+        }
+        
+        .about-pfp {
+            width: 6rem;
+            height: 6rem;
+            min-width: 6rem;
+            min-height: 6rem;
+        }
+    }
+}

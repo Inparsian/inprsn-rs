@@ -1,0 +1,125 @@
+mod objects;
+
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::time::Duration;
+use uuid::Uuid;
+use dioxus::prelude::*;
+
+use crate::windows::{self, WindowInstance, WindowInstanceProps};
+use crate::enums::{ScreenCoordinates};
+
+static MARISA_ACTIVE: GlobalSignal<bool> = GlobalSignal::new(|| false);
+
+#[derive(Clone)]
+enum MarisaEvent {
+    SpanOne {
+        position: ScreenCoordinates,
+    },
+    SpanTwo {
+        position: ScreenCoordinates,
+    },
+    Clear,
+}
+
+impl MarisaEvent {
+    fn spawn(&self) -> Option<Uuid> {
+        match self {
+            MarisaEvent::SpanOne { position } => Some(windows::spawn(WindowInstance::new(WindowInstanceProps {
+                title: "HALLO :D".to_owned(),
+                position: *position,
+                size: ScreenCoordinates::Absolute { x: 200, y: 100 },
+                ..Default::default()
+            }, move || rsx! {
+                div {
+                    class: "flex w-full h-full justify-center items-center text-center",
+                    "HALLO :D"
+                }
+            }))),
+            
+            MarisaEvent::SpanTwo { position } => Some(windows::spawn(WindowInstance::new(WindowInstanceProps {
+                title: "iswm has stopped responding".to_owned(),
+                position: *position,
+                size: ScreenCoordinates::Absolute { x: 300, y: 150 },
+                ..Default::default()
+            }, move || rsx! {
+                div {
+                    class: "flex flex-col space-y-4 w-full h-full justify-center items-center text-center text-wrap",
+                    
+                    span {
+                        "iswm has stopped responding. Do you wish to restart it?"
+                    }
+                    
+                    div {
+                        class: "flex flex-row space-x-6 items-center",
+                        a {
+                            class: "text-blue-500 hover:underline",
+                            "Yes"
+                        }
+                        a {
+                            class: "text-blue-500 hover:underline",
+                            "No"
+                        }
+                    }
+                }
+            }))),
+            
+            MarisaEvent::Clear => None,
+        }
+    }
+}
+
+pub async fn hallo() {
+    if *MARISA_ACTIVE.read() {
+        return;
+    }
+    *MARISA_ACTIVE.write() = true;
+    
+    let marisa_windows: Rc<RefCell<Vec<Uuid>>> = Rc::new(RefCell::new(Vec::new()));
+    let clear_marisa_windows = || {
+        windows::retain_windows(|window| !marisa_windows.borrow().contains(&window.id));
+        marisa_windows.borrow_mut().clear();
+    };
+    
+    let mut events = objects::EVENTS.to_vec();
+    events.sort_by_key(|(time, _)| std::cmp::Reverse(*time));
+    
+    // :D
+    let audio = web_sys::HtmlAudioElement::new_with_src("marisa_stole_the_precious_thing.mp3").unwrap();
+    if audio.play().is_err() {
+        return;
+    }
+    
+    // DEBUG: skip & pop every event before time threshold
+    //audio.set_current_time(204.593);
+    //events.retain(|(time, _)| *time > 204_593);
+    
+    loop {
+        let current_ms = audio.current_time() * 1000.0;
+        
+        // Pop all events that are due or overdue
+        while events.last().is_some_and(|(time, _)| (*time as f64 - current_ms) < 5.0) {
+            if let Some((_, event)) = events.pop() {
+                match event {
+                    MarisaEvent::SpanOne { .. }
+                   | MarisaEvent::SpanTwo { .. } => if let Some(uuid) = event.spawn() {
+                        marisa_windows.borrow_mut().push(uuid);
+                    },
+                    _ => clear_marisa_windows(),
+                }
+            }
+        }
+        
+        if events.is_empty() {
+            break;
+        }
+        
+        gloo_timers::future::sleep(Duration::from_millis(5)).await;
+    }
+    
+    if audio.pause().is_err() {
+        error!("Could not pause audio");
+    }
+    clear_marisa_windows();
+    *MARISA_ACTIVE.write() = false;
+}

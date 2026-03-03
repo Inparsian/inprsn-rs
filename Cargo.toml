@@ -1,0 +1,22 @@
+[package]
+name = "inprsn-rs"
+version = "0.1.0"
+authors = ["Inparsian <im@inpr.sn>"]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.44"
+dioxus = { version = "0.7.1", features = ["fullstack", "router"] }
+gloo-timers = { version = "0.3.0", features = ["futures"] }
+lru = "0.16.3"
+uuid = { version = "1.21.0", features = ["v4", "js"] }
+wasm-bindgen = "0.2.114"
+web-sys = { version = "0.3.91", features = ["HtmlAudioElement"] }
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
