@@ -109,7 +109,6 @@ pub fn force_close_window(id: Uuid) {
     });
 }
 
-#[allow(dead_code)]
 pub fn close_window(id: Uuid) {
     WINDOWS.with_mut(|windows| {
         if let Some(window) = windows.iter_mut().find(|window| window.id == id) {
@@ -127,7 +126,6 @@ pub fn close_window(id: Uuid) {
 
 pub fn retain_windows(mut predicate: impl FnMut(&WindowInstance) -> bool) {
     WINDOWS.with_mut(|windows| {
-        // Mark windows that fail the predicate as closing, then remove after timeout
         let mut to_close: Vec<Uuid> = Vec::new();
 
         for window in windows.iter_mut() {

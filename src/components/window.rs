@@ -47,8 +47,6 @@ pub fn Window(props: WindowProps) -> Element {
                 )},
             };
 
-            // Size offsets should depend on distance from 50%:
-            // closer to 0% => offset approaches 0, closer to 100% => offset approaches full size.
             let x_offset = (width as f32) * (x / 100.0);
             let y_offset = (height as f32) * (y / 100.0);
 
