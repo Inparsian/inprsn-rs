@@ -5,7 +5,12 @@ body {
     font-family: "Tamzen8x16", "monospace";
     font-size: 16px;
     
-    h1,h2,h3,h4,h5,h6 {
+    h1 {
+        font-family: "Tamzen7x14", "monospace";
+        font-size: 28px;
+    }
+    
+    h2,h3,h4,h5,h6 {
         font-family: "Tamzen10x20", "monospace";
         font-size: 20px;
     }

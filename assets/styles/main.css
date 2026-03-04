@@ -40,6 +40,10 @@ body {
             cursor: pointer;
             color: #ccc;
         }
+        
+        &.active {
+            color: #ccc;
+        }
     }
 }
 
@@ -196,15 +200,58 @@ body {
     
     #about-content {
         display: flex;
-        @container main (width > 400px) {
-            flex-direction: row;
+        width: 100%;
+        flex-direction: column;
+        gap: 1rem;
+        
+        h2,h3,h4,h5,h6 {
+            font-family: "Tamzen10x20", "monospace";
+            font-size: 20px;
+            font-weight: bold;
         }
         
-        .about-pfp {
-            width: 6rem;
-            height: 6rem;
-            min-width: 6rem;
-            min-height: 6rem;
+        .about-header {
+            display: flex;
+            justify-content: space-between;
+            
+            @container main (width > 250px) {
+                flex-direction: row;
+                align-items: center;
+            }
+            
+            @container main not (width > 250px) {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-family: "Tamzen7x14", monospace;
+                font-size: 28px;
+                font-weight: bold;
+            }
+            
+            .about-links {
+                display: flex;
+                gap: 0.75rem;
+            }
+        }
+        
+        div#about-home-page {
+            display: flex;
+            gap: 1.5rem;
+            @container main (width > 400px) {
+                flex-direction: row;
+            }
+            
+            @container main not (width > 400px) {
+                flex-direction: column;
+            }
+            
+            .about-pfp {
+                width: 6rem;
+                height: 6rem;
+                min-width: 6rem;
+                min-height: 6rem;
+            }
         }
     }
 }
