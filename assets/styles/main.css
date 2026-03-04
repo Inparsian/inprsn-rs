@@ -131,27 +131,55 @@ body {
         
         .window-corner {
             position: absolute;
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             
             &.top-left {
                 top: 0;
                 left: 0;
                 cursor: nw-resize;
             }
-            
+
+            &.top-center {
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                cursor: n-resize;
+            }
+
             &.top-right {
                 top: 0;
                 right: 0;
                 cursor: ne-resize;
             }
-            
+
+            &.center-left {
+                top: 50%;
+                left: 0;
+                transform: translateY(-50%);
+                cursor: w-resize;
+            }
+
+            &.center-right {
+                top: 50%;
+                right: 0;
+                transform: translateY(-50%);
+                cursor: e-resize;
+            }
+
             &.bottom-left {
                 bottom: 0;
                 left: 0;
                 cursor: sw-resize;
             }
-            
+
+            &.bottom-center {
+                bottom: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                cursor: s-resize;
+            }
+
             &.bottom-right {
                 bottom: 0;
                 right: 0;

@@ -14,7 +14,26 @@ pub enum ScreenCoordinates {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Corner {
     TopLeft,
+    TopCenter,
     TopRight,
-    BottomLeft,
+    CenterRight,
     BottomRight,
+    BottomCenter,
+    BottomLeft,
+    CenterLeft,
+}
+
+impl Corner {
+    pub fn all() -> Vec<Corner> {
+        vec![
+            Corner::TopLeft,
+            Corner::TopCenter,
+            Corner::TopRight,
+            Corner::CenterRight,
+            Corner::BottomRight,
+            Corner::BottomCenter,
+            Corner::BottomLeft,
+            Corner::CenterLeft,
+        ]
+    }
 }

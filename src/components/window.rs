@@ -57,13 +57,6 @@ pub fn Window(props: WindowProps) -> Element {
         }
     });
     
-    let corners = vec![
-        Corner::TopLeft,
-        Corner::TopRight,
-        Corner::BottomLeft,
-        Corner::BottomRight,
-    ];
-    
     let mut resize = move |page_coordinates: Point2D<f64, PageSpace>| {
         let (off_x, off_y) = *resize_offset.read();
         let (pos_x, pos_y) = match props.instance.props.position {
@@ -85,25 +78,6 @@ pub fn Window(props: WindowProps) -> Element {
             let min_h: i32 = 80;
 
             match corner {
-                Corner::BottomRight => {
-                    let new_w = (cur_w + dx).max(min_w);
-                    let new_h = (cur_h + dy).max(min_h);
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
-                }
-                Corner::BottomLeft => {
-                    let new_w = (cur_w - dx).max(min_w);
-                    let new_h = (cur_h + dy).max(min_h);
-                    let new_x = if cur_w != new_w { pos_x + dx } else { pos_x };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: pos_y });
-                }
-                Corner::TopRight => {
-                    let new_w = (cur_w + dx).max(min_w);
-                    let new_h = (cur_h - dy).max(min_h);
-                    let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: pos_x, y: new_y });
-                }
                 Corner::TopLeft => {
                     let new_w = (cur_w - dx).max(min_w);
                     let new_h = (cur_h - dy).max(min_h);
@@ -111,7 +85,46 @@ pub fn Window(props: WindowProps) -> Element {
                     let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
                     windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
                     windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: new_y });
-                }
+                },
+                Corner::TopCenter => {
+                    let new_h = (cur_h - dy).max(min_h);
+                    let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: cur_w, y: new_h });
+                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: pos_x, y: new_y });
+                },
+                Corner::TopRight => {
+                    let new_w = (cur_w + dx).max(min_w);
+                    let new_h = (cur_h - dy).max(min_h);
+                    let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
+                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: pos_x, y: new_y });
+                },
+                Corner::CenterRight => {
+                    let new_w = (cur_w + dx).max(min_w);
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: cur_h });
+                },
+                Corner::BottomRight => {
+                    let new_w = (cur_w + dx).max(min_w);
+                    let new_h = (cur_h + dy).max(min_h);
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
+                },
+                Corner::BottomCenter => {
+                    let new_h = (cur_h + dy).max(min_h);
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: cur_w, y: new_h });
+                },
+                Corner::BottomLeft => {
+                    let new_w = (cur_w - dx).max(min_w);
+                    let new_h = (cur_h + dy).max(min_h);
+                    let new_x = if cur_w != new_w { pos_x + dx } else { pos_x };
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
+                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: pos_y });
+                },
+                Corner::CenterLeft => {
+                    let new_w = (cur_w - dx).max(min_w);
+                    let new_x = if cur_w != new_w { pos_x + dx } else { pos_x };
+                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: cur_h });
+                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: pos_y });
+                },
             }
 
             resize_offset.set((page_coordinates.x as i32, page_coordinates.y as i32));
@@ -156,8 +169,12 @@ pub fn Window(props: WindowProps) -> Element {
                     let cursor = match *resize_corner.read() {
                         Some(Corner::TopLeft) => "nw-resize",
                         Some(Corner::TopRight) => "ne-resize",
-                        Some(Corner::BottomLeft) => "sw-resize",
+                        Some(Corner::TopCenter) => "n-resize",
+                        Some(Corner::CenterRight) => "e-resize",
                         Some(Corner::BottomRight) => "se-resize",
+                        Some(Corner::BottomCenter) => "s-resize",
+                        Some(Corner::BottomLeft) => "sw-resize",
+                        Some(Corner::CenterLeft) => "w-resize",
                         _ => "nwse-resize",
                     };
                     
@@ -199,14 +216,18 @@ pub fn Window(props: WindowProps) -> Element {
             // inner div for animation & styling purposes so transform does not break % math
             div {
                 class: "window-inner",
-                for corner in corners {
+                for corner in Corner::all() {
                     div {
                         class: {
                             let corner = match corner {
                                 Corner::TopLeft => "top-left",
+                                Corner::TopCenter => "top-center",
                                 Corner::TopRight => "top-right",
-                                Corner::BottomLeft => "bottom-left",
+                                Corner::CenterRight => "center-right",
                                 Corner::BottomRight => "bottom-right",
+                                Corner::BottomCenter => "bottom-center",
+                                Corner::BottomLeft => "bottom-left",
+                                Corner::CenterLeft => "center-left",
                             };
                             
                             format!("window-corner {}", corner)
