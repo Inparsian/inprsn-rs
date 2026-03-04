@@ -30,7 +30,7 @@ pub fn Desktop() -> Element {
                     label: "about",
                     icon: LdCat,
                     on_open: move |()| {
-                        windows::spawn(windows::about::new_about_instance());
+                        windows::spawn_window(windows::about::new_about_instance());
                     }
                 }
                 

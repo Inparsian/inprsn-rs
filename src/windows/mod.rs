@@ -59,7 +59,7 @@ impl WindowInstance {
     }
 }
 
-pub fn spawn(instance: WindowInstance) -> Uuid {
+pub fn spawn_window(instance: WindowInstance) -> Uuid {
     let id = instance.id;
     
     WINDOWS.with_mut(|windows| {
@@ -115,7 +115,7 @@ pub fn close_window(id: Uuid) {
             window.closing = true;
             
             let id = window.id;
-            use_future(move || async move {
+            spawn(async move {
                gloo_timers::future::sleep(Duration::from_millis(500)).await;
                force_close_window(id);
             });
@@ -134,14 +134,11 @@ pub fn retain_windows(mut predicate: impl FnMut(&WindowInstance) -> bool) {
             }
         }
 
-        use_future(move || {
-            let to_close = to_close.clone();
-            async move {
-                gloo_timers::future::sleep(Duration::from_millis(500)).await;
-                
-                for id in to_close {
-                    force_close_window(id);
-                }
+        spawn(async move {
+            gloo_timers::future::sleep(Duration::from_millis(500)).await;
+            
+            for id in to_close {
+                force_close_window(id);
             }
         });
     });

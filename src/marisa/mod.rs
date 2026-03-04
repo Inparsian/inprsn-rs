@@ -25,7 +25,7 @@ enum MarisaEvent {
 impl MarisaEvent {
     fn spawn(&self) -> Option<Uuid> {
         match self {
-            MarisaEvent::SpanOne { position } => Some(windows::spawn(WindowInstance::new(WindowInstanceProps {
+            MarisaEvent::SpanOne { position } => Some(windows::spawn_window(WindowInstance::new(WindowInstanceProps {
                 title: "HALLO :D".to_owned(),
                 position: *position,
                 size: ScreenCoordinates::Absolute { x: 200, y: 100 },
@@ -37,7 +37,7 @@ impl MarisaEvent {
                 }
             }))),
             
-            MarisaEvent::SpanTwo { position } => Some(windows::spawn(WindowInstance::new(WindowInstanceProps {
+            MarisaEvent::SpanTwo { position } => Some(windows::spawn_window(WindowInstance::new(WindowInstanceProps {
                 title: "iswm has stopped responding".to_owned(),
                 position: *position,
                 size: ScreenCoordinates::Absolute { x: 300, y: 150 },
