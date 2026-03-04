@@ -114,7 +114,6 @@ pub fn close_window(id: Uuid) {
         if let Some(window) = windows.iter_mut().find(|window| window.id == id) {
             window.closing = true;
             
-            // Remove this *after* our timeout elapses
             let id = window.id;
             use_future(move || async move {
                gloo_timers::future::sleep(Duration::from_millis(500)).await;

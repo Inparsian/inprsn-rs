@@ -3,7 +3,7 @@ pub mod marisa;
 pub mod info;
 
 mod components;
-use components::Window;
+use components::{Window, Desktop};
 
 mod windows;
 use windows::WINDOWS;
@@ -136,14 +136,7 @@ fn Full() -> Element {
             }
         }
         
-        div { class: "desktop",
-            button {
-                onclick: move |_| {
-                    windows::spawn(windows::about::new_about_instance());
-                },
-                "About"
-            }
-        }
+        Desktop {}
         
         for window in WINDOWS.read().iter() {
             Window {

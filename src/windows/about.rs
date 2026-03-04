@@ -11,7 +11,7 @@ enum AboutPage {
 pub fn new_about_instance() -> WindowInstance {
     WindowInstance::new(WindowInstanceProps {
         title: "inparsian".to_owned(),
-        size: ScreenCoordinates::Absolute { x: 520, y: 280 },
+        size: ScreenCoordinates::Absolute { x: 520, y: 240 },
         ..Default::default()
     }, move || rsx! {
         WindowAbout {}
@@ -41,15 +41,6 @@ fn HomePage() -> Element {
                     href: "/simple",
                     "nojs version"
                 },
-                
-                br {}
-                
-                a {
-                    onclick: |_| async {
-                        crate::marisa::hallo().await;
-                    },
-                    "click for a cool easter egg"
-                }
             }
         }
     }
