@@ -16,6 +16,7 @@ const WALLPAPER_IMG: Asset = asset!("/assets/wallpaper.jpg");
 
 // Styles
 const MAIN_CSS: Asset = asset!("/assets/styles/main.css");
+const FONTS_CSS: Asset = asset!("/assets/styles/fonts.css");
 const TAILWIND_CSS: Asset = asset!("/assets/styles/tailwind.css");
 
 fn main() {
@@ -27,6 +28,7 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
+        document::Link { rel: "stylesheet", href: FONTS_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
         
         div { id: "background", class: "absolute z-0 left-0 top-0 w-full h-full",

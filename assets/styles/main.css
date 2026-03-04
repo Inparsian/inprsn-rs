@@ -26,14 +26,10 @@
 body {
     background-color: #131313;
     color: #e2e2e2;
-    font-family: 'Tamzen', monospace;
-    
-    /* Prevent the browser from smoothing the pixels */
-    font-smooth: never;
+    font-family: 'Tamzen8x16', monospace;
+    font-size: 16px;
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
-    
-    /* Ensure the font sits exactly on the pixel grid */
     text-rendering: optimizeSpeed;
     
     a {
@@ -90,10 +86,12 @@ body {
         border: #323232 1px solid;
         
         .window-title-bar {
+            font-family: 'Tamzen7x14', monospace;
+            font-size: 14px;
             user-select: none;
             background: #444;
-            min-height: 28px;
-            max-height: 28px;
+            min-height: 24px;
+            max-height: 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -107,7 +105,7 @@ body {
             }
             
             .window-title-bar-buttons {
-                padding-right: 8px;
+                padding-right: 6px;
                 button {
                     height: 12px;
                     width: 12px;
@@ -126,7 +124,7 @@ body {
         .window-content {
             width: 100%;
             overflow: hidden;
-            height: calc(100% - 28px);
+            height: calc(100% - 24px);
             background: #131313;
             overflow: scroll;
         }
