@@ -38,6 +38,13 @@ pub fn WindowAbout() -> Element {
                     }
                     
                     a {
+                        href: "/simple",
+                        "nojs version"
+                    },
+                    
+                    br {}
+                    
+                    a {
                         onclick: |_| async {
                             crate::marisa::hallo().await;
                         },

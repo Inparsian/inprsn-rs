@@ -1,5 +1,6 @@
 pub mod enums;
 pub mod marisa;
+pub mod info;
 
 mod components;
 use components::Window;
@@ -15,9 +16,19 @@ const BG_SVG: Asset = asset!("/assets/bg.svg");
 const WALLPAPER_IMG: Asset = asset!("/assets/wallpaper.jpg");
 
 // Styles
+const SIMPLE_CSS: Asset = asset!("/assets/styles/simple.css");
 const MAIN_CSS: Asset = asset!("/assets/styles/main.css");
 const FONTS_CSS: Asset = asset!("/assets/styles/fonts.css");
 const TAILWIND_CSS: Asset = asset!("/assets/styles/tailwind.css");
+
+// Router
+#[derive(Routable, Clone, PartialEq, Eq)]
+pub enum Route {
+    #[route("/")]
+    Full,
+    #[route("/simple")]
+    Simple,
+}
 
 fn main() {
     dioxus::launch(App);
@@ -27,6 +38,78 @@ fn main() {
 fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        Router::<Route> {}
+    }
+}
+
+#[component]
+fn Simple() -> Element {
+    rsx! {
+        document::Link { rel: "stylesheet", href: SIMPLE_CSS }
+        document::Link { rel: "stylesheet", href: FONTS_CSS }
+        
+        div {
+            h1 {
+                "inpr.sn"
+            }
+            
+            img {
+                id: "persona",
+                src: "https://github.com/Inparsian.png",
+                alt: "Persona Image",
+                class: "about-pfp border border-dotted border-[#1B1B1B] p-px grayscale",
+            }
+            
+            p {
+                "hi, i'm inparsian. i'm some dumb 20 y.o. american dude who makes software"
+            }
+            
+            h2 {
+                "projects"
+            }
+            
+            ul {
+                for (name, desc, link) in info::PROJECTS {
+                    li {
+                        a {
+                            href: link.to_owned(),
+                            target: "_blank",
+                            {name.to_owned()}
+                        },
+                        span {
+                            {format!(" - {desc}")}
+                        }
+                    },
+                }
+            }
+            
+            h2 {
+                "socials"
+            }
+            
+            ul {
+                for (name, _, link) in info::SOCIALS {
+                    li {
+                        a {
+                            href: link.to_owned(),
+                            target: "_blank",
+                            {name.to_owned()}
+                        },
+                    },
+                }
+            }
+            
+            a {
+                href: "/",
+                "want the full experience? click here"
+            },
+        }
+    }
+}
+
+#[component]
+fn Full() -> Element {
+    rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: FONTS_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }

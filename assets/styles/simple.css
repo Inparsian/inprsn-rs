@@ -1,0 +1,31 @@
+body {
+    background: #131313;
+    color: #e2e2e2;
+    
+    font-family: "Tamzen8x16", "monospace";
+    font-size: 16px;
+    
+    h1,h2,h3,h4,h5,h6 {
+        font-family: "Tamzen10x20", "monospace";
+        font-size: 20px;
+    }
+    
+    img#persona {
+        width: 100px;
+        height: 100px;
+    }
+    
+    a {
+        color: #888;
+        text-decoration: underline;
+        
+        &:hover,&:focus {
+            cursor: pointer;
+            color: #ccc;
+        }
+    }
+    
+    ul {
+        list-style-type: square;
+    }
+}

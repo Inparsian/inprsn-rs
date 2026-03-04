@@ -45,6 +45,7 @@ body {
 
 .desktop {
     position: absolute;
+    padding: 16px;
     z-index: 10;
     left: 0;
     top: 0;
