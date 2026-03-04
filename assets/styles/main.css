@@ -128,7 +128,7 @@ body {
         
         .window-content {
             width: 100%;
-            overflow: hidden;
+            overflow: auto;
             height: calc(100% - 24px);
             background: #131313;
             overflow: scroll;
