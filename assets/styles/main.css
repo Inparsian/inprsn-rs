@@ -167,7 +167,7 @@ body {
     
     #about-content {
         display: flex;
-        @container main (width > 450px) {
+        @container main (width > 400px) {
             flex-direction: row;
         }
         
