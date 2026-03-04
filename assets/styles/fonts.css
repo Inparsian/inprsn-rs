@@ -1,0 +1,83 @@
+@font-face {
+    font-family: 'Tamzen5x9';
+    src: url('/fonts/Tamzen5x9r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen5x9';
+    src: url('/fonts/Tamzen5x9b.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Tamzen6x12';
+    src: url('/fonts/Tamzen6x12r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen6x12';
+    src: url('/fonts/Tamzen6x12b.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Tamzen7x13';
+    src: url('/fonts/Tamzen7x13r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen7x13';
+    src: url('/fonts/Tamzen7x13b.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Tamzen7x14';
+    src: url('/fonts/Tamzen7x14r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen7x14';
+    src: url('/fonts/Tamzen7x14b.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Tamzen8x15';
+    src: url('/fonts/Tamzen8x15r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen8x15';
+    src: url('/fonts/Tamzen8x15b.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Tamzen8x16';
+    src: url('/fonts/Tamzen8x16r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen8x16';
+    src: url('/fonts/Tamzen8x16b.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Tamzen10x20';
+    src: url('/fonts/Tamzen7x14r.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Tamzen10x20';
+    src: url('/fonts/Tamzen10x20b.ttf') format('truetype');
+    font-weight: bold;
+}
