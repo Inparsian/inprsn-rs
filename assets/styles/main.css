@@ -131,7 +131,6 @@ body {
             overflow: auto;
             height: calc(100% - 24px);
             background: #131313;
-            overflow: scroll;
         }
         
         .window-corner {
