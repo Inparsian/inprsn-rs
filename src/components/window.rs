@@ -2,6 +2,7 @@ use dioxus::html::geometry::{PageSpace, euclid::Point2D};
 use dioxus::prelude::*;
 
 use crate::enums::{Corner, ScreenCoordinates};
+use crate::components::BAR_HEIGHT_PX;
 use crate::windows::{self, WindowInstance};
 
 #[derive(Props, Clone, PartialEq)]
@@ -25,7 +26,11 @@ pub fn Window(props: WindowProps) -> Element {
             // later, this is just so we can use X% of the screen immediately without JS wizardry
             // and as a fallback if JS is disabled
             ScreenCoordinates::Percent { x, y } => {
-                (format!("{x}vw"), format!("{y}vh"), format!("translate(-{x}%, -{y}%)"))
+                (
+                    format!("{x}vw"),
+                    format!("calc({y}vh - {BAR_HEIGHT_PX}px)"),
+                    format!("translate(-{x}%, -{y}%)"),
+                )
             },
         }
     };
@@ -38,7 +43,7 @@ pub fn Window(props: WindowProps) -> Element {
             && let Some(window) = web_sys::window()
         {
             let window_width = window.inner_width().unwrap().as_f64().unwrap();
-            let window_height = window.inner_height().unwrap().as_f64().unwrap();
+            let window_height = window.inner_height().unwrap().as_f64().unwrap() - BAR_HEIGHT_PX as f64;
             let (width, height) = match props.instance.props.size {
                 ScreenCoordinates::Absolute { x, y } => (x, y),
                 ScreenCoordinates::Percent { x, y } => {(
@@ -141,7 +146,7 @@ pub fn Window(props: WindowProps) -> Element {
                     
                     let (window_width, window_height) = {
                         let width = window.inner_width().unwrap().as_f64().unwrap() as i32;
-                        let height = window.inner_height().unwrap().as_f64().unwrap() as i32;
+                        let height = window.inner_height().unwrap().as_f64().unwrap() as i32 - BAR_HEIGHT_PX as i32;
                         (width, height)
                     };
                     
@@ -203,7 +208,7 @@ pub fn Window(props: WindowProps) -> Element {
             },
             style: {
                 let (width, height) = if props.instance.maximized {
-                    ("100%".to_owned(), "100%".to_owned())
+                    ("100%".to_owned(), format!("calc(100% - {BAR_HEIGHT_PX}px)"))
                 } else {
                     match props.instance.props.size {
                         ScreenCoordinates::Absolute { x, y } => (format!("{}px", x as u32), format!("{}px", y as u32)),

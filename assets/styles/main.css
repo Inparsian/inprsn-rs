@@ -115,6 +115,16 @@ body {
     }
 }
 
+.bar {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    height: 24px;
+    width: 100%;
+    z-index: 60;
+    background-color: #131313;
+}
+
 .window {
     &:not(.focused) {
         z-index: 40;

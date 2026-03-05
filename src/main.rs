@@ -3,7 +3,7 @@ pub mod crazyerror;
 pub mod info;
 
 mod components;
-use components::{Window, Desktop};
+use components::{Window, Desktop, Bar};
 
 mod windows;
 use windows::WINDOWS;
@@ -137,6 +137,7 @@ fn Full() -> Element {
         }
         
         Desktop {}
+        Bar {}
         
         for window in WINDOWS.read().iter() {
             Window {
