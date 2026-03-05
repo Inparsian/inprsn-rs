@@ -5,7 +5,7 @@ use std::time::Duration;
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::enums::ScreenCoordinates;
+use crate::enums::{Corner, ScreenCoordinates};
 use self::about::new_about_instance;
 
 // Global wm state
@@ -37,6 +37,8 @@ pub struct WindowInstance {
     pub id: Uuid,
     pub props: WindowInstanceProps,
     pub focused: bool,
+    pub dragging: bool,
+    pub resize_corner: Option<Corner>,
     pub maximized: bool,
     pub closing: bool,
     pub render: Rc<dyn Fn() -> Element>,
@@ -54,6 +56,8 @@ impl WindowInstance {
             id: Uuid::new_v4(),
             props,
             focused: true,
+            dragging: false,
+            resize_corner: None,
             maximized: false,
             closing: false,
             render: Rc::new(render)
@@ -61,12 +65,17 @@ impl WindowInstance {
     }
 }
 
-pub fn spawn_window(instance: WindowInstance) -> Uuid {
+pub fn spawn_window(mut instance: WindowInstance) -> Uuid {
     let id = instance.id;
     
     WINDOWS.with_mut(|windows| {
+        // If a window other than this one is currently being dragged or resized,
+        // this shouldn't be put in focus
+        instance.focused = !windows.iter()
+            .any(|window| window.dragging || window.resize_corner.is_some());
+        
         for window in windows.iter_mut() {
-            window.focused = false;
+            window.focused = window.dragging || window.resize_corner.is_some();
         }
         
         windows.push(instance);
@@ -103,10 +112,20 @@ pub fn focus_window(id: Uuid) {
     });
 }
 
-pub fn get_window_maximized(id: Uuid) -> bool {
-    WINDOWS.with(|windows| {
-        windows.iter().find(|window| window.id == id).is_some_and(|window| window.maximized)
-    })
+pub fn set_window_dragging(id: Uuid, dragging: bool) {
+    WINDOWS.with_mut(|windows| {
+        if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
+            instance.dragging = dragging;
+        }
+    });
+}
+
+pub fn set_window_resize_corner(id: Uuid, corner: Option<Corner>) {
+    WINDOWS.with_mut(|windows| {
+        if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
+            instance.resize_corner = corner;
+        }
+    });
 }
 
 pub fn set_window_maximized(id: Uuid, maximized: bool) {

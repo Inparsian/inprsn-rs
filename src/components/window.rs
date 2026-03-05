@@ -12,16 +12,12 @@ pub struct WindowProps {
 
 #[component]
 pub fn Window(props: WindowProps) -> Element {
-    // Dragging state
+    // Dragging & resizing state
     let mut drag_offset = use_signal(|| (0, 0));
-    let mut dragging = use_signal(|| false);
-    
-    // Resizing state
     let mut resize_offset = use_signal(|| (0, 0));
-    let mut resize_corner = use_signal(|| None::<Corner>);
     
     let (left, top, transform) = if props.instance.maximized {
-        (format!("0px"), format!("0px"), "none".to_owned())
+        ("0px".to_owned(), "0px".to_owned(), "none".to_owned())
     } else {
         match props.instance.props.position {
             ScreenCoordinates::Absolute { x, y } => (format!("{x}px"), format!("{y}px"), "none".to_owned()),
@@ -68,7 +64,7 @@ pub fn Window(props: WindowProps) -> Element {
             ScreenCoordinates::Percent { .. } => (0, 0), // TODO: handle percent math
         };
 
-        if let Some(corner) = *resize_corner.read() {
+        if let Some(corner) = props.instance.resize_corner {
             let dx = page_coordinates.x as i32 - off_x;
             let dy = page_coordinates.y as i32 - off_y;
 
@@ -136,7 +132,7 @@ pub fn Window(props: WindowProps) -> Element {
     };
     
     rsx! {
-        if *dragging.read() {
+        if props.instance.dragging {
             div {
                 style: "position: fixed; inset: 0; z-index: 9999; cursor: grabbing;",
                 onmousemove: move |evt| {
@@ -163,14 +159,14 @@ pub fn Window(props: WindowProps) -> Element {
                         y: (coordinates.y as i32 - off_y).clamp(0, window_height - height),
                     });
                 },
-                onmouseup: move |_| dragging.set(false),
+                onmouseup: move |_| windows::set_window_dragging(props.instance.id, false),
             }
         }
         
-        if resize_corner.read().is_some() {
+        if props.instance.resize_corner.is_some() {
             div {
                 style: {
-                    let cursor = match *resize_corner.read() {
+                    let cursor = match props.instance.resize_corner {
                         Some(Corner::TopLeft) => "nw-resize",
                         Some(Corner::TopRight) => "ne-resize",
                         Some(Corner::TopCenter) => "n-resize",
@@ -187,7 +183,7 @@ pub fn Window(props: WindowProps) -> Element {
                 onmousemove: move |evt| {
                     resize(evt.page_coordinates());
                 },
-                onmouseup: move |_| resize_corner.set(None),
+                onmouseup: move |_| windows::set_window_resize_corner(props.instance.id, None)
             }
         }
         
@@ -245,7 +241,7 @@ pub fn Window(props: WindowProps) -> Element {
                                 evt.prevent_default();
                                 let page_coordinates = evt.page_coordinates();
                                 resize_offset.set((page_coordinates.x as i32, page_coordinates.y as i32));
-                                resize_corner.set(Some(corner));
+                                windows::set_window_resize_corner(props.instance.id, Some(corner));
                             },
                         }
                     },
@@ -256,16 +252,18 @@ pub fn Window(props: WindowProps) -> Element {
                     div {
                         class: "window-title-bar-draggable",
                         style: {
-                            let cursor = if *dragging.read() { "grabbing" } else { "grab" };
-                            
-                            format!("cursor: {cursor};")
+                            format!("cursor: {};", if props.instance.dragging {
+                                "grabbing"
+                            } else {
+                                "grab"
+                            })
                         },
                         onmousedown: move |evt| {
                             evt.prevent_default();
                             if !props.instance.maximized {
                                 let element_coordinates = evt.element_coordinates();
                                 drag_offset.set((element_coordinates.x as i32, element_coordinates.y as i32));
-                                dragging.set(true);
+                                windows::set_window_dragging(props.instance.id, true);
                             }
                         },
                         span {
@@ -282,8 +280,7 @@ pub fn Window(props: WindowProps) -> Element {
                                 ""
                             },
                             onclick: move |_| {
-                                let maximized = windows::get_window_maximized(props.instance.id);
-                                windows::set_window_maximized(props.instance.id, !maximized);
+                                windows::set_window_maximized(props.instance.id, !props.instance.maximized);
                             },
                         }
                         button {
