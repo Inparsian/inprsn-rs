@@ -219,7 +219,7 @@ pub fn Window(props: WindowProps) -> Element {
                 format!("position: absolute; left: {left}; top: {top}; transform: {transform}; width: {width}; height: {height};")
             },
             onmousedown: move |_| {
-                windows::focus_window(props.instance.id);
+                windows::set_window_focused(props.instance.id, true);
             },
             
             // inner div for animation & styling purposes so transform does not break % math

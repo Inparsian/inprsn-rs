@@ -31,6 +31,7 @@ body {
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeSpeed;
+    overflow: hidden;
     
     a {
         color: #888;
@@ -123,6 +124,38 @@ body {
     width: 100%;
     z-index: 60;
     background-color: #131313;
+    
+    .bar-tasks {
+        display: flex;
+        height: 100%;
+        width: 100%;
+        
+        .bar-task {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+
+            span {
+                font-family: 'Tamzen7x13', monospace;
+                font-size: 13px;
+                color: #e2e2e2;
+                text-align: center;
+                user-select: none;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            &:hover,&.focused {
+                background-color: #232323;
+            }
+            
+            &:active {
+                background-color: #333333;
+            }
+        }
+    }
 }
 
 .window {

@@ -100,13 +100,15 @@ pub fn move_window(id: Uuid, new_position: ScreenCoordinates) {
     });
 }
 
-pub fn focus_window(id: Uuid) {
+pub fn set_window_focused(id: Uuid, focused: bool) {
     WINDOWS.with_mut(|windows| {
         if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
-            instance.focused = true;
+            instance.focused = focused;
             
-            for other_instance in windows.iter_mut().filter(|window| window.id != id) {
-                other_instance.focused = false;
+            if focused {
+                for other_instance in windows.iter_mut().filter(|window| window.id != id) {
+                    other_instance.focused = false;
+                }
             }
         }
     });
