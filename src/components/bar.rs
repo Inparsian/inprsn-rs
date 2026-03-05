@@ -31,12 +31,14 @@ pub fn Bar() -> Element {
                         
                         onmousedown: {
                             let id = window.id;
+                            let focused = window.focused;
                             let iconified = window.iconified;
                             move |evt| {
                                 if evt.trigger_button() == Some(MouseButton::Auxiliary) {
                                     windows::close_window(id);
-                                } else if !iconified {
+                                } else if !iconified && focused {
                                     windows::set_window_iconified(id, true);
+                                    windows::set_window_focused(id, false);
                                 } else {
                                     windows::set_window_iconified(id, false);
                                     windows::set_window_focused(id, true);
