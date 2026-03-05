@@ -69,11 +69,7 @@ impl MarisaEvent {
     }
 }
 
-pub async fn run() {
-    if *MARISA_ACTIVE.read() {
-        return;
-    }
-    *MARISA_ACTIVE.write() = true;
+pub fn spawn_credits_window() -> Uuid {
     windows::spawn_window(WindowInstance::new(WindowInstanceProps {
         title: "crazyerror".to_owned(),
         size: ScreenCoordinates::Absolute { x: 300, y: 150 },
@@ -91,8 +87,17 @@ pub async fn run() {
                 "music rights go to IOSYS"
             }
         }
-    }));
+    }))
+}
+
+pub async fn run() {
+    if *MARISA_ACTIVE.read() {
+        return;
+    }
+    let credits = spawn_credits_window();
+    *MARISA_ACTIVE.write() = true;
     gloo_timers::future::sleep(Duration::from_millis(2000)).await;
+    windows::close_window(credits);
     hallo().await;
 }
 
@@ -141,9 +146,9 @@ async fn hallo() {
         gloo_timers::future::sleep(Duration::from_millis(5)).await;
     }
     
-    if audio.pause().is_err() {
-        error!("Could not pause audio");
-    }
+    spawn_credits_window();
     clear_marisa_windows();
+    let remaining_duration = audio.duration() - audio.current_time();
+    gloo_timers::future::sleep(Duration::from_millis((remaining_duration * 1000.0) as u64)).await;
     *MARISA_ACTIVE.write() = false;
 }
