@@ -37,6 +37,7 @@ pub struct WindowInstance {
     pub id: Uuid,
     pub props: WindowInstanceProps,
     pub focused: bool,
+    pub maximized: bool,
     pub closing: bool,
     pub render: Rc<dyn Fn() -> Element>,
 }
@@ -53,6 +54,7 @@ impl WindowInstance {
             id: Uuid::new_v4(),
             props,
             focused: true,
+            maximized: false,
             closing: false,
             render: Rc::new(render)
         }
@@ -97,6 +99,20 @@ pub fn focus_window(id: Uuid) {
             for other_instance in windows.iter_mut().filter(|window| window.id != id) {
                 other_instance.focused = false;
             }
+        }
+    });
+}
+
+pub fn get_window_maximized(id: Uuid) -> bool {
+    WINDOWS.with(|windows| {
+        windows.iter().find(|window| window.id == id).is_some_and(|window| window.maximized)
+    })
+}
+
+pub fn set_window_maximized(id: Uuid, maximized: bool) {
+    WINDOWS.with_mut(|windows| {
+        if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
+            instance.maximized = maximized;
         }
     });
 }

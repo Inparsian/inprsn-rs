@@ -20,14 +20,18 @@ pub fn Window(props: WindowProps) -> Element {
     let mut resize_offset = use_signal(|| (0, 0));
     let mut resize_corner = use_signal(|| None::<Corner>);
     
-    let (left, top, transform) = match props.instance.props.position {
-        ScreenCoordinates::Absolute { x, y } => (format!("{x}px"), format!("{y}px"), "none".to_owned()),
-        // Percent is an initial state for the window position until we can handle the math
-        // later, this is just so we can use X% of the screen immediately without JS wizardry
-        // and as a fallback if JS is disabled
-        ScreenCoordinates::Percent { x, y } => {
-            (format!("{x}vw"), format!("{y}vh"), format!("translate(-{x}%, -{y}%)"))
-        },
+    let (left, top, transform) = if props.instance.maximized {
+        (format!("0px"), format!("0px"), "none".to_owned())
+    } else {
+        match props.instance.props.position {
+            ScreenCoordinates::Absolute { x, y } => (format!("{x}px"), format!("{y}px"), "none".to_owned()),
+            // Percent is an initial state for the window position until we can handle the math
+            // later, this is just so we can use X% of the screen immediately without JS wizardry
+            // and as a fallback if JS is disabled
+            ScreenCoordinates::Percent { x, y } => {
+                (format!("{x}vw"), format!("{y}vh"), format!("translate(-{x}%, -{y}%)"))
+            },
+        }
     };
     
     // We can perform the percent math on the client-side if JS is enabled
@@ -202,12 +206,16 @@ pub fn Window(props: WindowProps) -> Element {
                 classes.join(" ")
             },
             style: {
-                let (width, height) = match props.instance.props.size {
-                    ScreenCoordinates::Absolute { x, y } => (x as u32, y as u32),
-                    ScreenCoordinates::Percent { .. } => (0, 0) // TODO: handle percent math
+                let (width, height) = if props.instance.maximized {
+                    ("100%".to_owned(), "100%".to_owned())
+                } else {
+                    match props.instance.props.size {
+                        ScreenCoordinates::Absolute { x, y } => (format!("{}px", x as u32), format!("{}px", y as u32)),
+                        ScreenCoordinates::Percent { .. } => ("0px".to_owned(), "0px".to_owned()) // TODO: handle percent math
+                    }
                 };
                 
-                format!("position: absolute; left: {left}; top: {top}; transform: {transform}; width: {width}px; height: {height}px;")
+                format!("position: absolute; left: {left}; top: {top}; transform: {transform}; width: {width}; height: {height};")
             },
             onmousedown: move |_| {
                 windows::focus_window(props.instance.id);
@@ -216,30 +224,32 @@ pub fn Window(props: WindowProps) -> Element {
             // inner div for animation & styling purposes so transform does not break % math
             div {
                 class: "window-inner",
-                for corner in Corner::all() {
-                    div {
-                        class: {
-                            let corner = match corner {
-                                Corner::TopLeft => "top-left",
-                                Corner::TopCenter => "top-center",
-                                Corner::TopRight => "top-right",
-                                Corner::CenterRight => "center-right",
-                                Corner::BottomRight => "bottom-right",
-                                Corner::BottomCenter => "bottom-center",
-                                Corner::BottomLeft => "bottom-left",
-                                Corner::CenterLeft => "center-left",
-                            };
-                            
-                            format!("window-corner {}", corner)
-                        },
-                        onmousedown: move |evt| {
-                            evt.prevent_default();
-                            let page_coordinates = evt.page_coordinates();
-                            resize_offset.set((page_coordinates.x as i32, page_coordinates.y as i32));
-                            resize_corner.set(Some(corner));
-                        },
-                    }
-                },
+                if !props.instance.maximized {
+                    for corner in Corner::all() {
+                        div {
+                            class: {
+                                let corner = match corner {
+                                    Corner::TopLeft => "top-left",
+                                    Corner::TopCenter => "top-center",
+                                    Corner::TopRight => "top-right",
+                                    Corner::CenterRight => "center-right",
+                                    Corner::BottomRight => "bottom-right",
+                                    Corner::BottomCenter => "bottom-center",
+                                    Corner::BottomLeft => "bottom-left",
+                                    Corner::CenterLeft => "center-left",
+                                };
+                                
+                                format!("window-corner {}", corner)
+                            },
+                            onmousedown: move |evt| {
+                                evt.prevent_default();
+                                let page_coordinates = evt.page_coordinates();
+                                resize_offset.set((page_coordinates.x as i32, page_coordinates.y as i32));
+                                resize_corner.set(Some(corner));
+                            },
+                        }
+                    },
+                }
                 
                 div {
                     class: "window-title-bar",
@@ -252,9 +262,11 @@ pub fn Window(props: WindowProps) -> Element {
                         },
                         onmousedown: move |evt| {
                             evt.prevent_default();
-                            let element_coordinates = evt.element_coordinates();
-                            drag_offset.set((element_coordinates.x as i32, element_coordinates.y as i32));
-                            dragging.set(true);
+                            if !props.instance.maximized {
+                                let element_coordinates = evt.element_coordinates();
+                                drag_offset.set((element_coordinates.x as i32, element_coordinates.y as i32));
+                                dragging.set(true);
+                            }
                         },
                         span {
                             {props.instance.props.title}
@@ -262,6 +274,18 @@ pub fn Window(props: WindowProps) -> Element {
                     }
                     div {
                         class: "window-title-bar-buttons",
+                        button {
+                            id: "maximize",
+                            class: if props.instance.maximized {
+                                "on"
+                            } else {
+                                ""
+                            },
+                            onclick: move |_| {
+                                let maximized = windows::get_window_maximized(props.instance.id);
+                                windows::set_window_maximized(props.instance.id, !maximized);
+                            },
+                        }
                         button {
                             id: "close",
                             onclick: move |_| windows::close_window(props.instance.id),

@@ -163,6 +163,8 @@ body {
             }
             
             .window-title-bar-buttons {
+                display: flex;
+                gap: 6px;
                 padding-right: 6px;
                 button {
                     height: 12px;
@@ -173,7 +175,17 @@ body {
                     justify-content: center;
                     
                     &#close {
-                        background: #e24444;
+                        background: #e26666;
+                    }
+                    
+                    &#maximize {
+                        &:not(.on) {
+                            border: 1px solid #66e266;
+                        }
+                        
+                        &.on {
+                            background: #66e266;
+                        }
                     }
                 }
             }
