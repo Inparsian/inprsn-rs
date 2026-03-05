@@ -1,4 +1,5 @@
 pub mod about;
+pub mod tictactoe;
 
 use std::rc::Rc;
 use std::time::Duration;

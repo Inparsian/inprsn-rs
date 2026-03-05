@@ -2,7 +2,7 @@ pub mod icon;
 use icon::DesktopIcon;
 
 use dioxus::prelude::*;
-use dioxus_free_icons::icons::ld_icons::{LdCat, LdCircleX};
+use dioxus_free_icons::icons::ld_icons::{LdCat, LdCircleX, LdGrid3x3};
 
 use crate::{windows, crazyerror};
 
@@ -41,6 +41,16 @@ pub fn Desktop() -> Element {
                     icon: LdCircleX,
                     on_open: move |()| async move {
                         crazyerror::run().await;
+                    }
+                }
+                
+                DesktopIcon {
+                    id: 2,
+                    selected_id,
+                    label: "tictactoe",
+                    icon: LdGrid3x3,
+                    on_open: move |()| async move {
+                        windows::spawn_window(windows::tictactoe::new_tictactoe_instance());
                     }
                 }
             }
