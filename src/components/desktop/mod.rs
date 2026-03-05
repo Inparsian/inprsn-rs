@@ -4,7 +4,7 @@ use icon::DesktopIcon;
 use dioxus::prelude::*;
 use dioxus_free_icons::icons::ld_icons::{LdCat, LdCircleX};
 
-use crate::{windows, marisa};
+use crate::{windows, crazyerror};
 
 #[component]
 pub fn Desktop() -> Element {
@@ -40,7 +40,7 @@ pub fn Desktop() -> Element {
                     label: "crazy error",
                     icon: LdCircleX,
                     on_open: move |()| async move {
-                        marisa::hallo().await;
+                        crazyerror::hallo().await;
                     }
                 }
             }
