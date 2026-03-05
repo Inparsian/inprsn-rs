@@ -69,12 +69,34 @@ impl MarisaEvent {
     }
 }
 
-pub async fn hallo() {
+pub async fn run() {
     if *MARISA_ACTIVE.read() {
         return;
     }
     *MARISA_ACTIVE.write() = true;
-    
+    windows::spawn_window(WindowInstance::new(WindowInstanceProps {
+        title: "crazyerror".to_owned(),
+        size: ScreenCoordinates::Absolute { x: 300, y: 150 },
+        ..Default::default()
+    }, move || rsx! {
+        div {
+            class: "flex flex-col w-full h-full justify-center items-center text-center",
+            span {
+                "CrazyError by inpr.sn"
+            }
+            span {
+                "created with osu! beatmap editor"
+            }
+            span {
+                "music rights go to IOSYS"
+            }
+        }
+    }));
+    gloo_timers::future::sleep(Duration::from_millis(2000)).await;
+    hallo().await;
+}
+
+async fn hallo() {
     let marisa_windows: Rc<RefCell<Vec<Uuid>>> = Rc::new(RefCell::new(Vec::new()));
     let clear_marisa_windows = || {
         windows::retain_windows(|window| !marisa_windows.borrow().contains(&window.id));
@@ -87,6 +109,8 @@ pub async fn hallo() {
     // :D
     let audio = web_sys::HtmlAudioElement::new_with_src("marisa_stole_the_precious_thing.mp3").unwrap();
     if audio.play().is_err() {
+        error!("Could not play audio");
+        *MARISA_ACTIVE.write() = false;
         return;
     }
     

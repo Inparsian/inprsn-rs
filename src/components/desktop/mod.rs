@@ -40,7 +40,7 @@ pub fn Desktop() -> Element {
                     label: "crazy error",
                     icon: LdCircleX,
                     on_open: move |()| async move {
-                        crazyerror::hallo().await;
+                        crazyerror::run().await;
                     }
                 }
             }
