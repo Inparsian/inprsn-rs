@@ -147,6 +147,10 @@ body {
                 white-space: nowrap;
             }
             
+            &.iconified {
+                opacity: 0.75;
+            }
+            
             &:hover,&.focused {
                 background-color: #232323;
             }
@@ -170,13 +174,13 @@ body {
         z-index: 50;
     }
     
-    &:not(.closing) .window-inner {
+    &:not(.closing,.iconified) .window-inner {
         @media not (prefers-reduced-motion: reduce) {
             animation: window-in 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
     }
     
-    &.closing {
+    &.closing,&.iconified {
         pointer-events: none;
         .window-inner {
             @media not (prefers-reduced-motion: reduce) {
@@ -218,15 +222,15 @@ body {
                 gap: 6px;
                 padding-right: 6px;
                 button {
-                    height: 12px;
-                    width: 12px;
+                    height: 10px;
+                    width: 10px;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     
-                    &#close {
-                        background: #e26666;
+                    &#iconify {
+                        background: #e2e266;
                     }
                     
                     &#maximize {
@@ -237,6 +241,10 @@ body {
                         &.on {
                             background: #66e266;
                         }
+                    }
+                    
+                    &#close {
+                        background: #e26666;
                     }
                 }
             }

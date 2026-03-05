@@ -22,17 +22,24 @@ pub fn Bar() -> Element {
                                 classes.push("focused");
                             }
                             
+                            if window.iconified {
+                                classes.push("iconified");
+                            }
+                            
                             classes.join(" ")
                         },
                         
                         onmousedown: {
                             let id = window.id;
-                            let focused = window.focused;
+                            let iconified = window.iconified;
                             move |evt| {
                                 if evt.trigger_button() == Some(MouseButton::Auxiliary) {
                                     windows::close_window(id);
+                                } else if !iconified {
+                                    windows::set_window_iconified(id, true);
                                 } else {
-                                    windows::set_window_focused(id, !focused);
+                                    windows::set_window_iconified(id, false);
+                                    windows::set_window_focused(id, true);
                                 }
                             }
                         },

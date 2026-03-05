@@ -40,6 +40,7 @@ pub struct WindowInstance {
     pub dragging: bool,
     pub resize_corner: Option<Corner>,
     pub maximized: bool,
+    pub iconified: bool,
     pub closing: bool,
     pub render: Rc<dyn Fn() -> Element>,
 }
@@ -59,6 +60,7 @@ impl WindowInstance {
             dragging: false,
             resize_corner: None,
             maximized: false,
+            iconified: false,
             closing: false,
             render: Rc::new(render)
         }
@@ -134,6 +136,14 @@ pub fn set_window_maximized(id: Uuid, maximized: bool) {
     WINDOWS.with_mut(|windows| {
         if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
             instance.maximized = maximized;
+        }
+    });
+}
+
+pub fn set_window_iconified(id: Uuid, iconified: bool) {
+    WINDOWS.with_mut(|windows| {
+        if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
+            instance.iconified = iconified;
         }
     });
 }

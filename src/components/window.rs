@@ -204,6 +204,10 @@ pub fn Window(props: WindowProps) -> Element {
                     classes.push("closing");
                 }
                 
+                if props.instance.iconified {
+                    classes.push("iconified");
+                }
+                
                 classes.join(" ")
             },
             style: {
@@ -277,6 +281,10 @@ pub fn Window(props: WindowProps) -> Element {
                     }
                     div {
                         class: "window-title-bar-buttons",
+                        button {
+                            id: "iconify",
+                            onclick: move |_| windows::set_window_iconified(props.instance.id, true),
+                        }
                         button {
                             id: "maximize",
                             class: if props.instance.maximized {
