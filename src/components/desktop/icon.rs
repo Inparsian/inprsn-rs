@@ -36,6 +36,7 @@ pub fn DesktopIcon<I: IconShape + Clone + PartialEq + 'static>(mut props: Deskto
                     }
                 } else {
                     props.selected_id.set(Some(props.id));
+                    opened.set(false);
                 }
             },
             
