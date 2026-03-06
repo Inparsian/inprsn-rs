@@ -1,5 +1,6 @@
 pub mod about;
 pub mod tictactoe;
+pub mod minesweeper;
 
 use std::rc::Rc;
 use std::time::Duration;

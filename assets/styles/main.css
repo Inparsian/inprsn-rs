@@ -68,6 +68,12 @@ body {
         display: flex;
         flex-direction: column;
         gap: 8px;
+        
+        .desktop-icons-row {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
     }
     
     .desktop-icon {
