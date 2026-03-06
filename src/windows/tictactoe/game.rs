@@ -72,9 +72,25 @@ const COUNTER_STRATS: InputOutput = &[
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cell {
-    Empty,
-    X,
-    O,
+    Empty = 0,
+    X = 1,
+    O = 2,
+}
+
+impl std::fmt::Display for Cell {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cell::Empty => write!(f, " "),
+            Cell::X => write!(f, "X"),
+            Cell::O => write!(f, "O"),
+        }
+    }
+}
+
+impl Cell {
+    pub fn is_occupied(self) -> bool {
+        matches!(self, Cell::X | Cell::O)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
@@ -100,16 +116,6 @@ impl Difficulty {
     }
 }
 
-impl std::fmt::Display for Cell {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Cell::Empty => write!(f, " "),
-            Cell::X => write!(f, "X"),
-            Cell::O => write!(f, "O"),
-        }
-    }
-}
-
 pub struct Board {
     pub difficulty: Difficulty,
     pub cells: [Cell; 9],
@@ -125,25 +131,25 @@ impl Board {
     
     pub fn calculate_winner(&self) -> Option<Cell> {
         for pattern in THREE_ROWS {
-            if self.cells[pattern.0] == self.cells[pattern.1]
-                && self.cells[pattern.1] == self.cells[pattern.2]
-                && self.cells[pattern.0] != Cell::Empty
-            {
-                return Some(self.cells[pattern.0]);
+            let one = self.cells[pattern.0];
+            let two = self.cells[pattern.1];
+            let three = self.cells[pattern.2];
+            if one.is_occupied() && one == two && two == three {
+                return Some(one);
             }
         }
         None
     }
     
     pub fn game_over(&self) -> bool {
-        self.calculate_winner().is_some() || self.cells.iter().all(|&cell| cell != Cell::Empty)
+        self.calculate_winner().is_some() || self.cells.iter().all(|&cell| cell.is_occupied())
     }
     
     fn find_match(&self, io: InputOutput, target: Cell) -> Vec<u8> {
         for (inputs, outputs) in io {
             if inputs.iter().all(|&i| self.cells[i as usize] == target) {
                 let available: Vec<u8> = outputs.iter()
-                    .filter(|&&i| self.cells[i as usize] == Cell::Empty)
+                    .filter(|&&i| !self.cells[i as usize].is_occupied())
                     .copied()
                     .collect();
                 
@@ -168,7 +174,7 @@ impl Board {
             // perform purely random moves
             self.cells.iter()
                 .enumerate()
-                .filter(|(_, c)| **c == Cell::Empty)
+                .filter(|(_, c)| !c.is_occupied())
                 .map(|(i, _)| i as u8)
                 .collect::<Vec<u8>>()
                 .choose(&mut rng)
@@ -198,7 +204,7 @@ impl Board {
             if choices.is_empty() {
                 choices = self.cells.iter()
                     .enumerate()
-                    .filter(|(_, c)| **c == Cell::Empty)
+                    .filter(|(_, c)| !c.is_occupied())
                     .map(|(i, _)| i as u8)
                     .collect();
             }
@@ -208,7 +214,7 @@ impl Board {
     }
     
     pub fn play(&mut self, index: u8) {
-        if self.game_over() || self.cells[index as usize] != Cell::Empty {
+        if self.game_over() || self.cells[index as usize].is_occupied() {
             return;
         }
         self.cells[index as usize] = Cell::X;
