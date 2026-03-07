@@ -38,6 +38,7 @@ impl Default for WindowInstanceProps {
 pub struct WindowInstance {
     pub id: Uuid,
     pub props: WindowInstanceProps,
+    pub no_transition: bool,
     pub focused: bool,
     pub dragging: bool,
     pub resize_corner: Option<Corner>,
@@ -58,6 +59,7 @@ impl WindowInstance {
         WindowInstance {
             id: Uuid::new_v4(),
             props,
+            no_transition: false,
             focused: true,
             dragging: false,
             resize_corner: None,
@@ -100,6 +102,14 @@ pub fn move_window(id: Uuid, new_position: ScreenCoordinates) {
     WINDOWS.with_mut(|windows| {
         if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
             instance.props.position = new_position;
+        }
+    });
+}
+
+pub fn set_window_no_transition(id: Uuid, no_transition: bool) {
+    WINDOWS.with_mut(|windows| {
+        if let Some(instance) = windows.iter_mut().find(|window| window.id == id) {
+            instance.no_transition = no_transition;
         }
     });
 }

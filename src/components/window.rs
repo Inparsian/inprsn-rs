@@ -28,8 +28,8 @@ pub fn Window(props: WindowProps) -> Element {
             ScreenCoordinates::Percent { x, y } => {
                 (
                     format!("{x}vw"),
-                    format!("calc({y}vh - {BAR_HEIGHT_PX}px)"),
-                    format!("translate(-{x}%, -{y}%)"),
+                    format!("{y}vh"),
+                    format!("translate(-{x}%, calc(-{y}% - {}px))", BAR_HEIGHT_PX / 2),
                 )
             },
         }
@@ -55,9 +55,15 @@ pub fn Window(props: WindowProps) -> Element {
             let x_offset = (width as f32) * (x / 100.0);
             let y_offset = (height as f32) * (y / 100.0);
 
-            windows::move_window(props.instance.id, ScreenCoordinates::Absolute {
-                x: x.mul_add(window_width as f32 / 100.0, -x_offset).ceil() as i32,
-                y: y.mul_add(window_height as f32 / 100.0, -y_offset).ceil() as i32,
+            spawn(async move {
+                gloo_timers::future::sleep(std::time::Duration::from_millis(1000)).await;
+                windows::set_window_no_transition(props.instance.id, true);
+                windows::move_window(props.instance.id, ScreenCoordinates::Absolute {
+                    x: x.mul_add(window_width as f32 / 100.0, -x_offset).ceil() as i32,
+                    y: y.mul_add(window_height as f32 / 100.0, -y_offset).ceil() as i32,
+                });
+                gloo_timers::future::sleep(std::time::Duration::from_millis(50)).await;
+                windows::set_window_no_transition(props.instance.id, false);
             });
         }
     });
@@ -208,7 +214,7 @@ pub fn Window(props: WindowProps) -> Element {
                     classes.push("iconified");
                 }
                 
-                if !props.instance.dragging && props.instance.resize_corner.is_none() {
+                if !props.instance.no_transition && !props.instance.dragging && props.instance.resize_corner.is_none() {
                     classes.push("stationary");
                 }
                 
