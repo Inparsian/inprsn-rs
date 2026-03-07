@@ -139,12 +139,15 @@ fn Full() -> Element {
         Desktop {}
         Bar {}
         
-        for window in WINDOWS.read().iter() {
-            Window {
-                key: "{window.id}",
-                instance: window.clone(),
-                
-                {(window.render)()}
+        div {
+            class: "windows",
+            for window in WINDOWS.read().iter() {
+                Window {
+                    key: "{window.id}",
+                    instance: window.clone(),
+                    
+                    {(window.render)()}
+                }
             }
         }
     }

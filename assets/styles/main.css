@@ -178,6 +178,12 @@ body {
     }
 }
 
+.windows {
+    position: relative;
+    width: 100vw;
+    height: calc(100vh - 24px);
+}
+
 .window {
     &:not(.focused) {
         z-index: 40;

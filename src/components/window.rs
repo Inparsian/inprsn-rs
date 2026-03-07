@@ -27,9 +27,9 @@ pub fn Window(props: WindowProps) -> Element {
             // and as a fallback if JS is disabled
             ScreenCoordinates::Percent { x, y } => {
                 (
-                    format!("{x}vw"),
-                    format!("{y}vh"),
-                    format!("translate(-{x}%, calc(-{y}% - {}px))", BAR_HEIGHT_PX / 2),
+                    format!("{x}%"),
+                    format!("{y}%"),
+                    format!("translate(-{x}%, -{y}%)"),
                 )
             },
         }
@@ -56,7 +56,6 @@ pub fn Window(props: WindowProps) -> Element {
             let y_offset = (height as f32) * (y / 100.0);
 
             spawn(async move {
-                gloo_timers::future::sleep(std::time::Duration::from_millis(1000)).await;
                 windows::set_window_no_transition(props.instance.id, true);
                 windows::move_window(props.instance.id, ScreenCoordinates::Absolute {
                     x: x.mul_add(window_width as f32 / 100.0, -x_offset).ceil() as i32,
