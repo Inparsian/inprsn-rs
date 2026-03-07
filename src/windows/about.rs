@@ -87,7 +87,14 @@ pub fn WindowAbout() -> Element {
                 div {
                     class: "about-header",
                     h1 {
-                        "inpr.sn"
+                        id: "about-title",
+                        for (i, c) in "inpr.sn".char_indices() {
+                            span {
+                                id: "title-char",
+                                style: format!("--i: {}", i + 1),
+                                {c.to_string()}
+                            }
+                        }
                     }
                     
                     div {

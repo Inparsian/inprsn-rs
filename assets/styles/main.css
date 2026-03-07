@@ -23,6 +23,16 @@
     }
 }
 
+@keyframes typing {
+    0% {
+        opacity: 0.2;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
 body {
     background-color: #131313;
     color: #e2e2e2;
@@ -482,6 +492,12 @@ body {
                 font-family: "Tamzen7x14", monospace;
                 font-size: 28px;
                 font-weight: bold;
+                
+                &#about-title {
+                    span#title-char {
+                        animation: typing calc(0.1s + (0.1s * var(--i))) step-end forwards;
+                    }
+                }
             }
             
             .about-links {
