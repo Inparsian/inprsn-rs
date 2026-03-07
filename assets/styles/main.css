@@ -180,13 +180,22 @@ body {
         z-index: 50;
     }
     
-    &:not(.closing,.iconified) .window-inner {
+    &:not(.closing,.iconified) {
         @media not (prefers-reduced-motion: reduce) {
-            animation: window-in 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            &.stationary {
+                transition-property: left, top, width, height;
+                transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+                transition-duration: 500ms;
+            }
+            
+            .window-inner {
+                animation: window-in 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
         }
     }
     
     &.closing,&.iconified {
+        user-select: none;
         pointer-events: none;
         .window-inner {
             @media not (prefers-reduced-motion: reduce) {

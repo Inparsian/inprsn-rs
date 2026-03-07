@@ -208,6 +208,10 @@ pub fn Window(props: WindowProps) -> Element {
                     classes.push("iconified");
                 }
                 
+                if !props.instance.dragging && props.instance.resize_corner.is_none() {
+                    classes.push("stationary");
+                }
+                
                 classes.join(" ")
             },
             style: {
