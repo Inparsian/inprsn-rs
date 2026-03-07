@@ -3,10 +3,27 @@ use dioxus::prelude::*;
 use crate::enums::ScreenCoordinates;
 use crate::windows::{WindowInstance, WindowInstanceProps};
 
+#[derive(Clone, Copy, PartialEq)]
 enum AboutPage {
     Home,
     Projects,
     Socials,
+}
+
+impl std::fmt::Display for AboutPage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AboutPage::Home => write!(f, "home"),
+            AboutPage::Projects => write!(f, "projects"),
+            AboutPage::Socials => write!(f, "socials"),
+        }
+    }
+}
+
+impl AboutPage {
+    pub fn all() -> &'static [AboutPage] {
+        &[AboutPage::Home, AboutPage::Projects, AboutPage::Socials]
+    }
 }
 
 pub fn new_about_instance() -> WindowInstance {
@@ -124,41 +141,21 @@ pub fn WindowAbout() -> Element {
                     
                     div {
                         class: "about-links",
-                        a {
-                            class: if matches!(*page.read(), AboutPage::Home) { "active" } else { "" },
-                            onclick: move |_| {
-                                *page.write() = AboutPage::Home;
+                        for about_page in AboutPage::all() {
+                            a {
+                                class: if *page.read() == *about_page { "active" } else { "" },
+                                onclick: move |_| *page.write() = *about_page,
+                                {about_page.to_string()}
                             },
-                            "about"
-                        },
-                        a {
-                            class: if matches!(*page.read(), AboutPage::Projects) { "active" } else { "" },
-                            onclick: move |_| {
-                                *page.write() = AboutPage::Projects;
-                            },
-                            "projects"
-                        },
-                        a {
-                            class: if matches!(*page.read(), AboutPage::Socials) { "active" } else { "" },
-                            onclick: move |_| {
-                                *page.write() = AboutPage::Socials;
-                            },
-                            "socials"
                         }
                     }
                 }
                 
                 div {
-                    if matches!(*page.read(), AboutPage::Home) {
-                        HomePage {}
-                    } else if matches!(*page.read(), AboutPage::Projects) {
-                        ProjectsPage {}
-                    } else if matches!(*page.read(), AboutPage::Socials) {
-                        SocialsPage {}
-                    } else {
-                        span {
-                            "Unknown page"
-                        }
+                    match *page.read() {
+                        AboutPage::Home => rsx! { HomePage {} },
+                        AboutPage::Projects => rsx! { ProjectsPage {} },
+                        AboutPage::Socials => rsx! { SocialsPage {} },
                     }
                 }
             }
