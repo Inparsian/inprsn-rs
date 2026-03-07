@@ -6,6 +6,7 @@ use crate::windows::{WindowInstance, WindowInstanceProps};
 enum AboutPage {
     Home,
     Projects,
+    Socials,
 }
 
 pub fn new_about_instance() -> WindowInstance {
@@ -74,6 +75,30 @@ pub fn ProjectsPage() -> Element {
 }
 
 #[component]
+pub fn SocialsPage() -> Element {
+    rsx! {
+        div {
+            id: "about-socials-page",
+            h2 {
+                "socials"
+            }
+
+            ul {
+                for (name, _, link) in crate::info::SOCIALS {
+                    li {
+                        a {
+                            href: link.to_owned(),
+                            target: "_blank",
+                            {name.to_owned()}
+                        },
+                    },
+                }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn WindowAbout() -> Element {
     let mut page = use_signal(|| AboutPage::Home);
     rsx! {
@@ -112,6 +137,13 @@ pub fn WindowAbout() -> Element {
                                 *page.write() = AboutPage::Projects;
                             },
                             "projects"
+                        },
+                        a {
+                            class: if matches!(*page.read(), AboutPage::Socials) { "active" } else { "" },
+                            onclick: move |_| {
+                                *page.write() = AboutPage::Socials;
+                            },
+                            "socials"
                         }
                     }
                 }
@@ -121,6 +153,8 @@ pub fn WindowAbout() -> Element {
                         HomePage {}
                     } else if matches!(*page.read(), AboutPage::Projects) {
                         ProjectsPage {}
+                    } else if matches!(*page.read(), AboutPage::Socials) {
+                        SocialsPage {}
                     } else {
                         span {
                             "Unknown page"
