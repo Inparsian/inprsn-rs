@@ -21,7 +21,7 @@ impl std::fmt::Display for AboutPage {
 }
 
 impl AboutPage {
-    pub fn all() -> &'static [AboutPage] {
+    fn all() -> &'static [AboutPage] {
         &[AboutPage::Home, AboutPage::Projects, AboutPage::Socials]
     }
 }
@@ -65,7 +65,7 @@ fn HomePage() -> Element {
 }
 
 #[component]
-pub fn ProjectsPage() -> Element {
+fn ProjectsPage() -> Element {
     rsx! {
         div {
             id: "about-projects-page",
@@ -92,7 +92,7 @@ pub fn ProjectsPage() -> Element {
 }
 
 #[component]
-pub fn SocialsPage() -> Element {
+fn SocialsPage() -> Element {
     rsx! {
         div {
             id: "about-socials-page",
@@ -116,7 +116,7 @@ pub fn SocialsPage() -> Element {
 }
 
 #[component]
-pub fn WindowAbout() -> Element {
+fn WindowAbout() -> Element {
     let mut page = use_signal(|| AboutPage::Home);
     rsx! {
         div {

@@ -14,7 +14,7 @@ pub fn new_minesweeper_instance() -> WindowInstance {
 }
 
 #[component]
-pub fn WindowMinesweeper() -> Element {
+fn WindowMinesweeper() -> Element {
     rsx! {
         div {}
     }

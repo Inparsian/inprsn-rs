@@ -16,7 +16,7 @@ pub fn new_tictactoe_instance() -> WindowInstance {
 }
 
 #[component]
-pub fn WindowTicTacToe() -> Element {
+fn WindowTicTacToe() -> Element {
     let mut board = use_signal(|| game::Board::new(game::Difficulty::Easy));
     
     rsx! {
