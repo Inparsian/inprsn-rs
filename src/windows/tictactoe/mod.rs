@@ -8,6 +8,7 @@ use crate::windows::{WindowInstance, WindowInstanceProps};
 pub fn new_tictactoe_instance() -> WindowInstance {
     WindowInstance::new(WindowInstanceProps {
         title: "tictactoe".to_owned(),
+        resizable: false,
         size: ScreenCoordinates::Absolute { x: 332, y: 396 },
         ..Default::default()
     }, move || rsx! {

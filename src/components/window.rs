@@ -238,7 +238,7 @@ pub fn Window(props: WindowProps) -> Element {
             // inner div for animation & styling purposes so transform does not break % math
             div {
                 class: "window-inner",
-                if !props.instance.maximized {
+                if !props.instance.maximized && props.instance.props.resizable {
                     for corner in Corner::all() {
                         div {
                             class: {
@@ -294,16 +294,18 @@ pub fn Window(props: WindowProps) -> Element {
                             id: "iconify",
                             onclick: move |_| windows::set_window_iconified(props.instance.id, true),
                         }
-                        button {
-                            id: "maximize",
-                            class: if props.instance.maximized {
-                                "on"
-                            } else {
-                                ""
-                            },
-                            onclick: move |_| {
-                                windows::set_window_maximized(props.instance.id, !props.instance.maximized);
-                            },
+                        if props.instance.props.resizable {
+                            button {
+                                id: "maximize",
+                                class: if props.instance.maximized {
+                                    "on"
+                                } else {
+                                    ""
+                                },
+                                onclick: move |_| {
+                                    windows::set_window_maximized(props.instance.id, !props.instance.maximized);
+                                },
+                            }
                         }
                         button {
                             id: "close",

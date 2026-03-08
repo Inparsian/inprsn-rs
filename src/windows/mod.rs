@@ -19,6 +19,7 @@ pub static WINDOWS: GlobalSignal<Vec<WindowInstance>> = Signal::global(|| vec![
 pub struct WindowInstanceProps {
     pub title: String,
     pub icon: String,
+    pub resizable: bool,
     pub position: ScreenCoordinates,
     pub size: ScreenCoordinates,
 }
@@ -28,6 +29,7 @@ impl Default for WindowInstanceProps {
         Self {
             title: "Untitled Window".to_owned(),
             icon: "mdi:window-restore".to_owned(),
+            resizable: true,
             position: ScreenCoordinates::Percent { x: 50.0, y: 50.0 },
             size: ScreenCoordinates::Absolute { x: 800, y: 400 },
         }
