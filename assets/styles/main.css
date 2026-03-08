@@ -361,8 +361,10 @@ body {
         display: flex;
         
         .difficulty-button {
+            font-family: "Tamzen6x12", monospace;
+            font-size: 12px;
             width: 100%;
-            padding: 8px 16px;
+            padding: 4px 8px;
             background: #1b1b1b;
             color: #ffffff;
             cursor: pointer;
@@ -412,22 +414,23 @@ body {
             background: #13131399;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
             justify-content: center;
             align-items: center;
             color: #ffffff;
             
             .ttt-gameover-text {
-                font-family: "Tamzen7x13", "monospace";
-                font-size: 26px;
+                font-family: "Tamzen10x20", "monospace";
+                font-size: 20px;
+                font-weight: bold;
                 text-align: center;
             }
             
             .ttt-play-again-button {
-                font-family: "Tamzen8x15", "monospace";
-                font-size: 15px;
+                font-family: "Tamzen6x12", "monospace";
+                font-size: 12px;
                 text-align: center;
-                padding: 8px 16px;
+                padding: 6px 12px;
                 background: #242424;
                 color: #ffffff;
                 cursor: pointer;
@@ -450,7 +453,7 @@ body {
             justify-content: center;
             align-items: center;
             font-family: "Tamzen6x12", "monospace";
-            font-size: 48px;
+            font-size: 36px;
             cursor: pointer;
             user-select: none;
 
