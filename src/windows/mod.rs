@@ -15,13 +15,14 @@ pub static WINDOWS: GlobalSignal<Vec<WindowInstance>> = Signal::global(|| vec![
     new_about_instance()
 ]);
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct WindowInstanceProps {
     pub title: String,
     pub icon: String,
     pub resizable: bool,
     pub position: ScreenCoordinates,
     pub size: ScreenCoordinates,
+    pub on_close: Option<Rc<dyn Fn(Uuid)>>,
 }
 
 impl Default for WindowInstanceProps {
@@ -32,7 +33,18 @@ impl Default for WindowInstanceProps {
             resizable: true,
             position: ScreenCoordinates::Percent { x: 50.0, y: 50.0 },
             size: ScreenCoordinates::Absolute { x: 800, y: 400 },
+            on_close: None,
         }
+    }
+}
+
+impl PartialEq for WindowInstanceProps {
+    fn eq(&self, other: &Self) -> bool {
+        self.title == other.title &&
+        self.icon == other.icon &&
+        self.resizable == other.resizable &&
+        self.position == other.position &&
+        self.size == other.size
     }
 }
 
@@ -165,6 +177,12 @@ pub fn set_window_iconified(id: Uuid, iconified: bool) {
 pub fn force_close_window(id: Uuid) {
     WINDOWS.with_mut(|windows| {
         if let Some(index) = windows.iter().position(|window| window.id == id) {
+            let window = windows[index].clone();
+            // ensure close_window was not called already so we don't invoke this
+            // callback twice
+            if !window.closing && let Some(on_close) = window.props.on_close {
+                on_close(id);
+            }
             windows.remove(index);
         }
     });
@@ -174,11 +192,14 @@ pub fn close_window(id: Uuid) {
     WINDOWS.with_mut(|windows| {
         if let Some(window) = windows.iter_mut().find(|window| window.id == id) {
             window.closing = true;
-            
+            if let Some(on_close) = window.props.on_close.clone() {
+                on_close(id);
+            }
+
             let id = window.id;
             spawn(async move {
-               gloo_timers::future::sleep(Duration::from_millis(500)).await;
-               force_close_window(id);
+                gloo_timers::future::sleep(Duration::from_millis(500)).await;
+                force_close_window(id);
             });
         }
     });
