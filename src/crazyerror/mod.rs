@@ -28,6 +28,7 @@ impl MarisaEvent {
             MarisaEvent::SpanOne { position } => Some(windows::spawn_window(WindowInstance::new(WindowInstanceProps {
                 title: "HALLO :D".to_owned(),
                 position: *position,
+                resizable: false,
                 size: ScreenCoordinates::Absolute { x: 200, y: 100 },
                 ..Default::default()
             }, move || rsx! {
@@ -39,6 +40,7 @@ impl MarisaEvent {
             
             MarisaEvent::SpanTwo { position } => Some(windows::spawn_window(WindowInstance::new(WindowInstanceProps {
                 title: "iswm has stopped responding".to_owned(),
+                resizable: false,
                 position: *position,
                 size: ScreenCoordinates::Absolute { x: 300, y: 150 },
                 ..Default::default()
@@ -72,6 +74,7 @@ impl MarisaEvent {
 pub fn spawn_credits_window() -> Uuid {
     windows::spawn_window(WindowInstance::new(WindowInstanceProps {
         title: "crazyerror".to_owned(),
+        resizable: false,
         size: ScreenCoordinates::Absolute { x: 300, y: 150 },
         ..Default::default()
     }, move || rsx! {
