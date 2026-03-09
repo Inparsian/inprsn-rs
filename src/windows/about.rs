@@ -55,6 +55,14 @@ fn HomePage() -> Element {
                 
                 br {}
                 
+                noscript {
+                    p {
+                        "i see you have javascript disabled; this is the full desktop-as-a-site version of my site and relies heavily on js to function properly. page navigation will also not work. consider enabling js or visiting the nojs version below."
+                    }
+                
+                    br {}
+                }
+                
                 a {
                     href: "/simple",
                     "nojs version"
