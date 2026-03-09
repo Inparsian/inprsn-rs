@@ -33,6 +33,16 @@
     }
 }
 
+@keyframes panic-line {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
 body {
     background-color: #131313;
     color: #e2e2e2;
@@ -54,6 +64,22 @@ body {
         
         &.active {
             color: #ccc;
+        }
+    }
+    
+    .panic {
+        background-color: #000000;
+        color: #9A9A9A;
+        font-family: 'Tamzen8x16', monospace;
+        font-size: 16px;
+        width: 100vw;
+        height: 100vh;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        
+        span.panic-line {
+            animation: panic-line calc(0.1s + (0.02s * var(--i))) step-end forwards;
         }
     }
 }
