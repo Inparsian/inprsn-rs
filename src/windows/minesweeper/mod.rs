@@ -8,7 +8,7 @@ pub fn new_minesweeper_instance() -> WindowInstance {
         title: "minesweeper".to_owned(),
         size: ScreenCoordinates::Absolute { x: 332, y: 396 },
         ..Default::default()
-    }, move || rsx! {
+    }, move |_| rsx! {
         WindowMinesweeper {}
     })
 }

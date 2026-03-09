@@ -11,7 +11,7 @@ pub fn new_tictactoe_instance() -> WindowInstance {
         resizable: false,
         size: ScreenCoordinates::Absolute { x: 218, y: 268 },
         ..Default::default()
-    }, move || rsx! {
+    }, move |_| rsx! {
         WindowTicTacToe {}
     })
 }

@@ -205,7 +205,7 @@ fn Full() -> Element {
                         key: "{window.id}",
                         instance: window.clone(),
                         
-                        {(window.render)()}
+                        {(window.render)(window.id)}
                     }
                 }
             }

@@ -31,7 +31,7 @@ impl MarisaEvent {
                 resizable: false,
                 size: ScreenCoordinates::Absolute { x: 200, y: 100 },
                 ..Default::default()
-            }, move || rsx! {
+            }, move |_| rsx! {
                 div {
                     class: "flex w-full h-full justify-center items-center text-center",
                     "HALLO :D"
@@ -44,7 +44,7 @@ impl MarisaEvent {
                 position: *position,
                 size: ScreenCoordinates::Absolute { x: 300, y: 150 },
                 ..Default::default()
-            }, move || rsx! {
+            }, move |_| rsx! {
                 div {
                     class: "flex flex-col space-y-4 w-full h-full justify-center items-center text-center text-wrap",
                     
@@ -77,7 +77,7 @@ pub fn spawn_credits_window() -> Uuid {
         resizable: false,
         size: ScreenCoordinates::Absolute { x: 300, y: 150 },
         ..Default::default()
-    }, move || rsx! {
+    }, move |_| rsx! {
         div {
             class: "flex flex-col w-full h-full justify-center items-center text-center",
             span {

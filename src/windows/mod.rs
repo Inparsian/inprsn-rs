@@ -47,7 +47,7 @@ pub struct WindowInstance {
     pub maximized: bool,
     pub iconified: bool,
     pub closing: bool,
-    pub render: Rc<dyn Fn() -> Element>,
+    pub render: Rc<dyn Fn(Uuid) -> Element>,
 }
 
 impl PartialEq for WindowInstance {
@@ -57,7 +57,7 @@ impl PartialEq for WindowInstance {
 }
 
 impl WindowInstance {
-    pub fn new(props: WindowInstanceProps, render: impl Fn() -> Element + 'static) -> Self {
+    pub fn new(props: WindowInstanceProps, render: impl Fn(Uuid) -> Element + 'static) -> Self {
         WindowInstance {
             id: Uuid::new_v4(),
             props,

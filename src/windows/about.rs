@@ -31,7 +31,7 @@ pub fn new_about_instance() -> WindowInstance {
         title: "inparsian".to_owned(),
         size: ScreenCoordinates::Absolute { x: 520, y: 240 },
         ..Default::default()
-    }, move || rsx! {
+    }, move |_| rsx! {
         WindowAbout {}
     })
 }
