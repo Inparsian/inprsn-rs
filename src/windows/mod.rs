@@ -1,4 +1,5 @@
 pub mod about;
+pub mod hydra;
 pub mod tictactoe;
 pub mod minesweeper;
 
@@ -175,26 +176,31 @@ pub fn set_window_iconified(id: Uuid, iconified: bool) {
 }
 
 pub fn force_close_window(id: Uuid) {
+    let mut on_close: Option<Rc<dyn Fn(Uuid)>> = None;
+    let mut should_call_on_close = false;
+
     WINDOWS.with_mut(|windows| {
         if let Some(index) = windows.iter().position(|window| window.id == id) {
-            let window = windows[index].clone();
             // ensure close_window was not called already so we don't invoke this
             // callback twice
-            if !window.closing && let Some(on_close) = window.props.on_close {
-                on_close(id);
-            }
+            should_call_on_close = !windows[index].closing;
+            on_close = windows[index].props.on_close.clone();
             windows.remove(index);
         }
     });
+
+    if should_call_on_close && let Some(on_close) = on_close {
+        on_close(id);
+    }
 }
 
 pub fn close_window(id: Uuid) {
+    let mut on_close: Option<Rc<dyn Fn(Uuid)>> = None;
+
     WINDOWS.with_mut(|windows| {
         if let Some(window) = windows.iter_mut().find(|window| window.id == id) {
             window.closing = true;
-            if let Some(on_close) = window.props.on_close.clone() {
-                on_close(id);
-            }
+            on_close = window.props.on_close.clone();
 
             let id = window.id;
             spawn(async move {
@@ -203,6 +209,10 @@ pub fn close_window(id: Uuid) {
             });
         }
     });
+
+    if let Some(on_close) = on_close {
+        on_close(id);
+    }
 }
 
 pub fn retain_windows(mut predicate: impl FnMut(&WindowInstance) -> bool) {
