@@ -1,10 +1,11 @@
 pub mod icon;
+
 use icon::DesktopIcon;
 
 use dioxus::prelude::*;
-use dioxus_free_icons::icons::ld_icons::{LdBomb, LdCat, LdCircleX, LdDrama, LdGrid3x3};
+use dioxus_free_icons::icons::ld_icons::{LdActivity, LdBomb, LdCat, LdCircleX, LdDrama, LdGrid3x3};
 
-use crate::{windows, crazyerror};
+use crate::{os, apps, crazyerror};
 
 #[component]
 pub fn Desktop() -> Element {
@@ -24,20 +25,33 @@ pub fn Desktop() -> Element {
             div {
                 class: "desktop-icons",
                 
-                DesktopIcon {
-                    id: 0,
-                    selected_id,
-                    label: "about",
-                    icon: LdCat,
-                    on_open: move |()| {
-                        windows::spawn_window(windows::about::new_about_instance());
-                    }
+                div {
+                    class: "desktop-icons-row",
+                    DesktopIcon {
+                        id: 0,
+                        selected_id,
+                        label: "about",
+                        icon: LdCat,
+                        on_open: move |()| {
+                            os::spawn_process(apps::about::new_about_instance());
+                        }
+                    },
+                    
+                    DesktopIcon {
+                        id: 1,
+                        selected_id,
+                        label: "tasks",
+                        icon: LdActivity,
+                        on_open: move |()| {
+                            os::spawn_process(apps::taskmanager::new_taskmanager_instance());
+                        }
+                    },
                 },
                 
                 div {
                     class: "desktop-icons-row",
                     DesktopIcon {
-                        id: 1,
+                        id: 2,
                         selected_id,
                         label: "crazy error",
                         icon: LdCircleX,
@@ -47,12 +61,12 @@ pub fn Desktop() -> Element {
                     },
                     
                     DesktopIcon {
-                        id: 2,
+                        id: 3,
                         selected_id,
                         label: "hydra",
                         icon: LdDrama,
                         on_open: move |()| {
-                            windows::spawn_window(windows::hydra::new_hydra_instance());
+                            os::spawn_process(apps::hydra::new_hydra_instance());
                         }
                     },
                 },
@@ -60,22 +74,22 @@ pub fn Desktop() -> Element {
                 div {
                     class: "desktop-icons-row",
                     DesktopIcon {
-                        id: 3,
+                        id: 4,
                         selected_id,
                         label: "tictactoe",
                         icon: LdGrid3x3,
                         on_open: move |()| async move {
-                            windows::spawn_window(windows::tictactoe::new_tictactoe_instance());
+                            os::spawn_process(apps::tictactoe::new_tictactoe_instance());
                         }
                     },
                     
                     DesktopIcon {
-                        id: 4,
+                        id: 5,
                         selected_id,
                         label: "minesweeper",
                         icon: LdBomb,
                         on_open: move |()| async move {
-                            windows::spawn_window(windows::minesweeper::new_minesweeper_instance());
+                            os::spawn_process(apps::minesweeper::new_minesweeper_instance());
                         }
                     },
                 },

@@ -1,7 +1,8 @@
+use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
-use crate::windows::{WindowInstance, WindowInstanceProps};
+use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
 
 #[derive(Clone, Copy, PartialEq)]
 enum AboutPage {
@@ -26,14 +27,25 @@ impl AboutPage {
     }
 }
 
-pub fn new_about_instance() -> WindowInstance {
+pub fn about_window(pid: u32) -> WindowInstance {
     WindowInstance::new(WindowInstanceProps {
         title: "inparsian".to_owned(),
         size: ScreenCoordinates::Absolute { x: 520, y: 240 },
+        on_close: Some(Rc::new(move |_| {
+            os::kill_process(pid);
+        })),
         ..Default::default()
     }, move |_| rsx! {
         WindowAbout {}
     })
+}
+
+pub fn new_about_instance() -> Process {
+    let mut process = Process::new("about");
+    let pid = process.id;
+    process.add_window(about_window(pid));
+    
+    process
 }
 
 #[component]

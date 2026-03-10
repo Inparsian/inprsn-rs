@@ -1,19 +1,27 @@
 mod game;
 
+use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
-use crate::windows::{WindowInstance, WindowInstanceProps};
+use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
 
-pub fn new_tictactoe_instance() -> WindowInstance {
-    WindowInstance::new(WindowInstanceProps {
+pub fn new_tictactoe_instance() -> Process {
+    let mut process = Process::new("tictactoe");
+    let pid = process.id;
+    process.add_window(WindowInstance::new(WindowInstanceProps {
         title: "tictactoe".to_owned(),
         resizable: false,
         size: ScreenCoordinates::Absolute { x: 218, y: 268 },
+        on_close: Some(Rc::new(move |_| {
+            os::kill_process(pid);
+        })),
         ..Default::default()
     }, move |_| rsx! {
         WindowTicTacToe {}
-    })
+    }));
+    
+    process
 }
 
 #[component]

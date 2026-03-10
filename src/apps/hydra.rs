@@ -3,29 +3,36 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 
 use crate::enums::ScreenCoordinates;
-use crate::windows::{self, WindowInstance, WindowInstanceProps};
+use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
 
-pub fn new_hydra_instance() -> WindowInstance {
+pub fn new_hydra_instance() -> Process {
+    let mut process = Process::new("hydra");
+    process.add_window(new_hydra_window(process.id));
+    process
+}
+
+pub fn new_hydra_window(pid: u32) -> WindowInstance {
     let x = rand::random::<f32>() * 100.0;
     let y = rand::random::<f32>() * 100.0;
+    info!("new_hydra_window: pid={}", pid);
     
     WindowInstance::new(WindowInstanceProps {
         title: "hydra".to_owned(),
         resizable: false,
         position: ScreenCoordinates::Percent { x, y },
         size: ScreenCoordinates::Absolute { x: 344, y: 160 },
-        on_close: Some(Rc::new(move |_| {
-            windows::spawn_window(new_hydra_instance());
-            windows::spawn_window(new_hydra_instance());
-        })),
+        on_close: Some(Rc::new(move |_| os::with_process_mut(pid, |process| {
+            process.add_window(new_hydra_window(pid));
+            process.add_window(new_hydra_window(pid));
+        }))),
         ..Default::default()
     }, move |id| rsx! {
-        WindowHydra { id }
+        WindowHydra { pid, id }
     })
 }
 
 #[component]
-fn WindowHydra(id: Uuid) -> Element {
+fn WindowHydra(pid: u32, id: Uuid) -> Element {
     rsx! {
         div {
             class: "flex flex-col p-4 items-center text-center",
@@ -33,7 +40,8 @@ fn WindowHydra(id: Uuid) -> Element {
             span { "cut off a head, two more will take its place." },
             a {
                 onclick: move |_| {
-                    windows::close_window(id);
+                    os::call_on_close(id);
+                    os::close_window(id);
                 },
                 "ok"
             }

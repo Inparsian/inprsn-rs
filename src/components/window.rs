@@ -1,9 +1,9 @@
 use dioxus::html::geometry::{PageSpace, euclid::Point2D};
 use dioxus::prelude::*;
 
+use crate::os::{self, WindowInstance};
 use crate::enums::{Corner, ScreenCoordinates};
 use crate::components::BAR_HEIGHT_PX;
-use crate::windows::{self, WindowInstance};
 
 #[derive(Props, Clone, PartialEq)]
 pub struct WindowProps {
@@ -56,13 +56,15 @@ pub fn Window(props: WindowProps) -> Element {
             let y_offset = (height as f32) * (y / 100.0);
 
             spawn(async move {
-                windows::set_window_no_transition(props.instance.id, true);
-                windows::move_window(props.instance.id, ScreenCoordinates::Absolute {
-                    x: x.mul_add(window_width as f32 / 100.0, -x_offset).ceil() as i32,
-                    y: y.mul_add(window_height as f32 / 100.0, -y_offset).ceil() as i32,
+                os::with_window_mut(props.instance.id, |window| {
+                    window.no_transition = true;
+                    window.props.position = ScreenCoordinates::Absolute {
+                        x: x.mul_add(window_width as f32 / 100.0, -x_offset).ceil() as i32,
+                        y: y.mul_add(window_height as f32 / 100.0, -y_offset).ceil() as i32,
+                    };
                 });
                 gloo_timers::future::sleep(std::time::Duration::from_millis(50)).await;
-                windows::set_window_no_transition(props.instance.id, false);
+                os::with_window_mut(props.instance.id, |window| window.no_transition = false);
             });
         }
     });
@@ -87,55 +89,55 @@ pub fn Window(props: WindowProps) -> Element {
             let min_w: i32 = 120;
             let min_h: i32 = 80;
 
-            match corner {
+            os::with_window_mut(props.instance.id, |window| match corner {
                 Corner::TopLeft => {
                     let new_w = (cur_w - dx).max(min_w);
                     let new_h = (cur_h - dy).max(min_h);
                     let new_x = if cur_w != new_w { pos_x + dx } else { pos_x };
                     let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: new_y });
+                    window.props.size = ScreenCoordinates::Absolute { x: new_w, y: new_h };
+                    window.props.position = ScreenCoordinates::Absolute { x: new_x, y: new_y };
                 },
                 Corner::TopCenter => {
                     let new_h = (cur_h - dy).max(min_h);
                     let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: cur_w, y: new_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: pos_x, y: new_y });
+                    window.props.size = ScreenCoordinates::Absolute { x: cur_w, y: new_h };
+                    window.props.position = ScreenCoordinates::Absolute { x: pos_x, y: new_y };
                 },
                 Corner::TopRight => {
                     let new_w = (cur_w + dx).max(min_w);
                     let new_h = (cur_h - dy).max(min_h);
                     let new_y = if cur_h != new_h { pos_y + dy } else { pos_y };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: pos_x, y: new_y });
+                    window.props.size = ScreenCoordinates::Absolute { x: new_w, y: new_h };
+                    window.props.position = ScreenCoordinates::Absolute { x: pos_x, y: new_y };
                 },
                 Corner::CenterRight => {
                     let new_w = (cur_w + dx).max(min_w);
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: cur_h });
+                    window.props.size = ScreenCoordinates::Absolute { x: new_w, y: cur_h };
                 },
                 Corner::BottomRight => {
                     let new_w = (cur_w + dx).max(min_w);
                     let new_h = (cur_h + dy).max(min_h);
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
+                    window.props.size = ScreenCoordinates::Absolute { x: new_w, y: new_h };
                 },
                 Corner::BottomCenter => {
                     let new_h = (cur_h + dy).max(min_h);
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: cur_w, y: new_h });
+                    window.props.size = ScreenCoordinates::Absolute { x: cur_w, y: new_h };
                 },
                 Corner::BottomLeft => {
                     let new_w = (cur_w - dx).max(min_w);
                     let new_h = (cur_h + dy).max(min_h);
                     let new_x = if cur_w != new_w { pos_x + dx } else { pos_x };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: new_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: pos_y });
+                    window.props.size = ScreenCoordinates::Absolute { x: new_w, y: new_h };
+                    window.props.position = ScreenCoordinates::Absolute { x: new_x, y: pos_y };
                 },
                 Corner::CenterLeft => {
                     let new_w = (cur_w - dx).max(min_w);
                     let new_x = if cur_w != new_w { pos_x + dx } else { pos_x };
-                    windows::resize_window(props.instance.id, ScreenCoordinates::Absolute { x: new_w, y: cur_h });
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute { x: new_x, y: pos_y });
+                    window.props.size = ScreenCoordinates::Absolute { x: new_w, y: cur_h };
+                    window.props.position = ScreenCoordinates::Absolute { x: new_x, y: pos_y };
                 },
-            }
+            });
 
             resize_offset.set((page_coordinates.x as i32, page_coordinates.y as i32));
         }
@@ -164,12 +166,12 @@ pub fn Window(props: WindowProps) -> Element {
                     
                     let (off_x, off_y) = *drag_offset.read();
                     let coordinates = evt.page_coordinates();
-                    windows::move_window(props.instance.id, ScreenCoordinates::Absolute {
+                    os::with_window_mut(props.instance.id, |window| window.props.position = ScreenCoordinates::Absolute {
                         x: (coordinates.x as i32 - off_x).clamp(0, window_width - width),
                         y: (coordinates.y as i32 - off_y).clamp(0, window_height - height),
                     });
                 },
-                onmouseup: move |_| windows::set_window_dragging(props.instance.id, false),
+                onmouseup: move |_| os::with_window_mut(props.instance.id, |window| window.dragging = false),
             }
         }
         
@@ -193,7 +195,7 @@ pub fn Window(props: WindowProps) -> Element {
                 onmousemove: move |evt| {
                     resize(evt.page_coordinates());
                 },
-                onmouseup: move |_| windows::set_window_resize_corner(props.instance.id, None)
+                onmouseup: move |_| os::with_window_mut(props.instance.id, |window| window.resize_corner = None),
             }
         }
         
@@ -232,7 +234,7 @@ pub fn Window(props: WindowProps) -> Element {
                 format!("position: absolute; left: {left}; top: {top}; transform: {transform}; width: {width}; height: {height};")
             },
             onmousedown: move |_| {
-                windows::set_window_focused(props.instance.id, true);
+                os::set_window_focused(props.instance.id, true);
             },
             
             // inner div for animation & styling purposes so transform does not break % math
@@ -259,7 +261,7 @@ pub fn Window(props: WindowProps) -> Element {
                                 evt.prevent_default();
                                 let page_coordinates = evt.page_coordinates();
                                 resize_offset.set((page_coordinates.x as i32, page_coordinates.y as i32));
-                                windows::set_window_resize_corner(props.instance.id, Some(corner));
+                                os::with_window_mut(props.instance.id, |window| window.resize_corner = Some(corner));
                             },
                         }
                     },
@@ -281,7 +283,7 @@ pub fn Window(props: WindowProps) -> Element {
                             if !props.instance.maximized {
                                 let element_coordinates = evt.element_coordinates();
                                 drag_offset.set((element_coordinates.x as i32, element_coordinates.y as i32));
-                                windows::set_window_dragging(props.instance.id, true);
+                                os::with_window_mut(props.instance.id, |window| window.dragging = true);
                             }
                         },
                         span {
@@ -292,7 +294,7 @@ pub fn Window(props: WindowProps) -> Element {
                         class: "window-title-bar-buttons",
                         button {
                             id: "iconify",
-                            onclick: move |_| windows::set_window_iconified(props.instance.id, true),
+                            onclick: move |_| os::with_window_mut(props.instance.id, |window| window.iconified = true),
                         }
                         if props.instance.props.resizable {
                             button {
@@ -303,13 +305,16 @@ pub fn Window(props: WindowProps) -> Element {
                                     ""
                                 },
                                 onclick: move |_| {
-                                    windows::set_window_maximized(props.instance.id, !props.instance.maximized);
+                                    os::with_window_mut(props.instance.id, |window| window.maximized = !props.instance.maximized);
                                 },
                             }
                         }
                         button {
                             id: "close",
-                            onclick: move |_| windows::close_window(props.instance.id),
+                            onclick: move |_| {
+                                os::call_on_close(props.instance.id);
+                                os::close_window(props.instance.id);
+                            },
                         }
                     }
                 }

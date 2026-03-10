@@ -1,13 +1,10 @@
 mod objects;
 
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::time::Duration;
-use uuid::Uuid;
 use dioxus::prelude::*;
 
-use crate::windows::{self, WindowInstance, WindowInstanceProps};
 use crate::enums::{ScreenCoordinates};
+use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
 
 static MARISA_ACTIVE: GlobalSignal<bool> = GlobalSignal::new(|| false);
 
@@ -23,9 +20,9 @@ enum MarisaEvent {
 }
 
 impl MarisaEvent {
-    fn spawn(&self) -> Option<Uuid> {
+    fn spawn(&self) -> Option<WindowInstance> {
         match self {
-            MarisaEvent::SpanOne { position } => Some(windows::spawn_window(WindowInstance::new(WindowInstanceProps {
+            MarisaEvent::SpanOne { position } => Some(WindowInstance::new(WindowInstanceProps {
                 title: "HALLO :D".to_owned(),
                 position: *position,
                 resizable: false,
@@ -36,9 +33,9 @@ impl MarisaEvent {
                     class: "flex w-full h-full justify-center items-center text-center",
                     "HALLO :D"
                 }
-            }))),
+            })),
             
-            MarisaEvent::SpanTwo { position } => Some(windows::spawn_window(WindowInstance::new(WindowInstanceProps {
+            MarisaEvent::SpanTwo { position } => Some(WindowInstance::new(WindowInstanceProps {
                 title: "iswm has stopped responding".to_owned(),
                 resizable: false,
                 position: *position,
@@ -64,15 +61,15 @@ impl MarisaEvent {
                         }
                     }
                 }
-            }))),
+            })),
             
             MarisaEvent::Clear => None,
         }
     }
 }
 
-pub fn spawn_credits_window() -> Uuid {
-    windows::spawn_window(WindowInstance::new(WindowInstanceProps {
+pub fn credits_window() -> WindowInstance {
+    WindowInstance::new(WindowInstanceProps {
         title: "crazyerror".to_owned(),
         resizable: false,
         size: ScreenCoordinates::Absolute { x: 300, y: 150 },
@@ -90,27 +87,26 @@ pub fn spawn_credits_window() -> Uuid {
                 "music rights go to IOSYS"
             }
         }
-    }))
+    })
 }
 
 pub async fn run() {
+    let mut process = Process::new("crazyerror");
     if *MARISA_ACTIVE.read() {
         return;
     }
-    let credits = spawn_credits_window();
+    let pid = process.id;
+    let credits = credits_window();
+    let id = credits.id;
+    process.add_window(credits);
     *MARISA_ACTIVE.write() = true;
     gloo_timers::future::sleep(Duration::from_millis(2000)).await;
-    windows::close_window(credits);
-    hallo().await;
+    os::close_window(id);
+    os::spawn_process(process);
+    hallo(pid).await;
 }
 
-async fn hallo() {
-    let marisa_windows: Rc<RefCell<Vec<Uuid>>> = Rc::new(RefCell::new(Vec::new()));
-    let clear_marisa_windows = || {
-        windows::retain_windows(|window| !marisa_windows.borrow().contains(&window.id));
-        marisa_windows.borrow_mut().clear();
-    };
-    
+async fn hallo(pid: u32) {
     let mut events = objects::EVENTS.to_vec();
     events.sort_by_key(|(time, _)| std::cmp::Reverse(*time));
     
@@ -134,10 +130,10 @@ async fn hallo() {
             if let Some((_, event)) = events.pop() {
                 match event {
                     MarisaEvent::SpanOne { .. }
-                   | MarisaEvent::SpanTwo { .. } => if let Some(uuid) = event.spawn() {
-                        marisa_windows.borrow_mut().push(uuid);
+                   | MarisaEvent::SpanTwo { .. } => if let Some(window) = event.spawn() {
+                       os::with_process_mut(pid, |process| process.add_window(window));
                     },
-                    _ => clear_marisa_windows(),
+                    _ => os::with_process_mut(pid, |process| process.close_all_windows()),
                 }
             }
         }
@@ -149,8 +145,10 @@ async fn hallo() {
         gloo_timers::future::sleep(Duration::from_millis(5)).await;
     }
     
-    spawn_credits_window();
-    clear_marisa_windows();
+    os::with_process_mut(pid, |process| {
+        process.close_all_windows();
+        process.add_window(credits_window());
+    });
     let remaining_duration = audio.duration() - audio.current_time();
     gloo_timers::future::sleep(Duration::from_millis((remaining_duration * 1000.0) as u64)).await;
     *MARISA_ACTIVE.write() = false;

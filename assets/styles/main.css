@@ -561,3 +561,20 @@ body {
         }
     }
 }
+
+/* task mgr */
+.taskmanager-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.taskmanager-list {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    
+    .taskmanager-item {
+        display: flex;
+        justify-content: space-between;
+    }
+}

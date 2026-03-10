@@ -1,12 +1,11 @@
+pub mod os;
 pub mod enums;
 pub mod crazyerror;
 pub mod info;
 
+mod apps;
 mod components;
 use components::{Window, Desktop, Bar};
-
-mod windows;
-use windows::WINDOWS;
 
 use dioxus::prelude::*;
 use rand::RngExt as _;
@@ -200,7 +199,7 @@ fn Full() -> Element {
             
             div {
                 class: "windows",
-                for window in WINDOWS.read().iter() {
+                for window in os::WINDOWS.read().iter() {
                     Window {
                         key: "{window.id}",
                         instance: window.clone(),
