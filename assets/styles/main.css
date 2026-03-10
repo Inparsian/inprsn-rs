@@ -562,19 +562,48 @@ body {
     }
 }
 
-/* task mgr */
-.taskmanager-header {
-    display: flex;
-    justify-content: space-between;
-}
+.taskmanager {
+    position: relative;
+    width: 100%;
+    font-family: "Tamzen7x14", monospace;
+    font-size: 14px;
 
-.taskmanager-list {
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    
-    .taskmanager-item {
-        display: flex;
-        justify-content: space-between;
+    table {
+        text-align: left;
+        overflow-x: hidden;
+        width: 100%;
+        table-layout: fixed;
+
+        tr {
+            th:first-child {
+                padding-left: 8px;
+            }
+
+            th:last-child {
+                padding-right: 8px;
+            }
+
+            th {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            &:first-child {
+                th {
+                    font-weight: bold;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                    background: #242424;
+                }
+            }
+
+            &:not(:first-child) {
+                th {
+                    font-weight: normal;
+                }
+            }
+        }
     }
 }
