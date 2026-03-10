@@ -1,5 +1,8 @@
 use std::sync::atomic::Ordering;
+use dioxus::prelude::*;
 use uuid::Uuid;
+
+use crate::os::WINDOWS;
 
 use super::WindowInstance;
 
@@ -19,7 +22,9 @@ impl Process {
     }
     
     pub fn windows_len(&self) -> usize {
-        self.windows.len()
+        let wids = self.windows.clone();
+        
+        WINDOWS.with(|windows| windows.iter().filter(|w| wids.contains(&w.id) && !w.closing).count())
     }
     
     pub fn has_window(&self, window_id: Uuid) -> bool {

@@ -5,7 +5,7 @@ use std::time::Duration;
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::apps::about::about_window;
+use crate::{apps::about::about_window, os::PROCESSES};
 
 pub static WINDOWS: GlobalSignal<Vec<WindowInstance>> = GlobalSignal::new(|| vec![
     // pushing to WINDOWS during DOM init is unsafe, so i do it here instead
@@ -55,7 +55,6 @@ pub fn set_window_focused(window_id: Uuid, focused: bool) {
             window.focused = focused;
             
             if focused {
-                // unfocus other windows
                 for other in windows.iter_mut().filter(|w| w.id != window_id) {
                     other.focused = false;
                 }
@@ -67,6 +66,13 @@ pub fn set_window_focused(window_id: Uuid, focused: bool) {
 pub fn force_close_window(window_id: Uuid) {
     WINDOWS.with_mut(|windows| if let Some(pos) = windows.iter().position(|w| w.id == window_id) {
         windows.remove(pos);
+        
+        // processes shouldn't reference this wid at this point
+        PROCESSES.with_mut(|processes| {
+            for process in processes.iter_mut() {
+                process.windows.retain(|w| *w != window_id);
+            }
+        });
     });
 }
 
