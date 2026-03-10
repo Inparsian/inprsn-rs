@@ -18,6 +18,10 @@ impl Process {
         }
     }
     
+    pub fn windows_len(&self) -> usize {
+        self.windows.len()
+    }
+    
     pub fn has_window(&self, window_id: Uuid) -> bool {
         self.windows.contains(&window_id)
     }

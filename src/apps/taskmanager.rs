@@ -9,7 +9,7 @@ pub fn new_taskmanager_instance() -> Process {
     let pid = process.id;
     process.add_window(WindowInstance::new(WindowInstanceProps {
         title: "task manager".to_owned(),
-        size: ScreenCoordinates::Absolute { x: 332, y: 250 },
+        size: ScreenCoordinates::Absolute { x: 350, y: 250 },
         on_close: Some(Rc::new(move |_| {
             os::kill_process(pid);
         })),
@@ -29,15 +29,17 @@ fn WindowTaskManager() -> Element {
             
             table {
                 tr {
-                    th { "id" }
-                    th { "name" }
-                    th { "actions" }
-                }
+                    th { "id" },
+                    th { "name" },
+                    th { "windows" },
+                    th { "actions" },
+                },
                 
                 for process in PROCESSES.read().iter() {
                     tr {
-                        th { {process.id.to_string()} }
-                        th { {process.name.clone()} }
+                        th { {process.id.to_string()} },
+                        th { {process.name.clone()} },
+                        th { {process.windows_len().to_string()} },
                         th {
                             a {
                                 onclick: {
@@ -46,10 +48,10 @@ fn WindowTaskManager() -> Element {
                                 },
                                 "kill"
                             }
-                        }
-                    }
+                        },
+                    },
                 }
-            }
-        }
+            },
+        },
     }
 }
