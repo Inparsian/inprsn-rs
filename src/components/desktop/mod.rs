@@ -2,7 +2,7 @@ pub mod icon;
 
 use icon::DesktopIcon;
 
-use dioxus::prelude::*;
+use dioxus::{core::spawn_forever, prelude::*};
 use dioxus_free_icons::icons::ld_icons::{LdActivity, LdBomb, LdCat, LdCircleX, LdDrama, LdGrid3x3};
 
 use crate::{os, apps, crazyerror};
@@ -55,9 +55,9 @@ pub fn Desktop() -> Element {
                         selected_id,
                         label: "crazy error",
                         icon: LdCircleX,
-                        on_open: move |()| async move {
-                            crazyerror::run().await;
-                        }
+                        on_open: move |()| {
+                            spawn_forever(crazyerror::run());
+                        },
                     },
                     
                     DesktopIcon {

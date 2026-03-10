@@ -36,6 +36,10 @@ pub fn spawn_process(process: Process) {
     });
 }
 
+pub fn has_pid(process_id: u32) -> bool {
+    PROCESSES.with(|processes| processes.iter().any(|p| p.id == process_id))
+}
+
 pub fn with_process<F>(process_id: u32, f: F)
 where
     F: FnOnce(&Process),

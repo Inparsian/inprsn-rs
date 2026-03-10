@@ -3,6 +3,7 @@ mod objects;
 use std::time::Duration;
 use dioxus::prelude::*;
 
+use crate::KERNEL_PANIC;
 use crate::enums::{ScreenCoordinates};
 use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
 
@@ -99,14 +100,22 @@ pub async fn run() {
     let credits = credits_window();
     let id = credits.id;
     process.add_window(credits);
+    os::spawn_process(process);
     *MARISA_ACTIVE.write() = true;
     gloo_timers::future::sleep(Duration::from_millis(2000)).await;
     os::close_window(id);
-    os::spawn_process(process);
     hallo(pid).await;
 }
 
 async fn hallo(pid: u32) {
+    // stop this immediately if one of the following is true:
+    // 1. this pid does not exist anymore
+    // 2. kernel panic
+    if !os::has_pid(pid) || *KERNEL_PANIC.read() {
+        *MARISA_ACTIVE.write() = false;
+        return;
+    }
+    
     let mut events = objects::EVENTS.to_vec();
     events.sort_by_key(|(time, _)| std::cmp::Reverse(*time));
     
@@ -127,6 +136,10 @@ async fn hallo(pid: u32) {
         
         // Pop all events that are due or overdue
         while events.last().is_some_and(|(time, _)| (*time as f64 - current_ms) < 5.0) {
+            if !os::has_pid(pid) || *KERNEL_PANIC.read() {
+                break;
+            }
+            
             if let Some((_, event)) = events.pop() {
                 match event {
                     MarisaEvent::SpanOne { .. }
@@ -138,18 +151,23 @@ async fn hallo(pid: u32) {
             }
         }
         
-        if events.is_empty() {
+        if events.is_empty() || !os::has_pid(pid) || *KERNEL_PANIC.read() {
+            if let Err(e) = audio.pause() {
+                error!("Failed to pause audio: {:?}", e);
+            }
             break;
         }
         
         gloo_timers::future::sleep(Duration::from_millis(5)).await;
     }
     
-    os::with_process_mut(pid, |process| {
-        process.close_all_windows();
-        process.add_window(credits_window());
-    });
-    let remaining_duration = audio.duration() - audio.current_time();
-    gloo_timers::future::sleep(Duration::from_millis((remaining_duration * 1000.0) as u64)).await;
+    if os::has_pid(pid) && !*KERNEL_PANIC.read() {
+        os::with_process_mut(pid, |process| {
+            process.close_all_windows();
+            process.add_window(credits_window());
+        });
+        let remaining_duration = audio.duration() - audio.current_time();
+        gloo_timers::future::sleep(Duration::from_millis((remaining_duration * 1000.0) as u64)).await;
+    }
     *MARISA_ACTIVE.write() = false;
 }
