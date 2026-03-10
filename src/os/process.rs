@@ -6,7 +6,6 @@ use super::WindowInstance;
 pub struct Process {
     pub id: u32,
     pub name: String,
-    pub killing: bool,
     pub(super) windows: Vec<Uuid>
 }
 
@@ -15,7 +14,6 @@ impl Process {
         Self {
             id: super::PID_COUNTER.fetch_add(1, Ordering::SeqCst),
             name: name.to_owned(),
-            killing: false,
             windows: Vec::new(),
         }
     }

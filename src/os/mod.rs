@@ -9,16 +9,22 @@ use std::sync::atomic::AtomicU32;
 use dioxus::prelude::*;
 use uuid::Uuid;
 
+use crate::KERNEL_PANIC;
+
 // Global os state
-pub static PID_COUNTER: AtomicU32 = AtomicU32::new(2);
+pub static PID_COUNTER: AtomicU32 = AtomicU32::new(3);
 pub static PROCESSES: GlobalSignal<Vec<Process>> = Signal::global(|| {
     // get the first window id, should be the about window
     let first_wid = WINDOWS.with(|windows| windows.first().map(|w| w.id).unwrap_or_default());
     vec![
         Process {
             id: 1,
+            name: "systemd".to_owned(),
+            windows: vec![],
+        },
+        Process {
+            id: 2,
             name: "about".to_owned(),
-            killing: false,
             windows: vec![first_wid],
         }
     ]
@@ -85,4 +91,9 @@ pub fn kill_process(pid: u32) {
             processes.remove(pos);
         }
     });
+    
+    // special pids
+    if pid == 1 {
+        *KERNEL_PANIC.write() = true;
+    }
 }
