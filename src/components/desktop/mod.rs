@@ -3,7 +3,7 @@ pub mod icon;
 use icon::DesktopIcon;
 
 use dioxus::{core::spawn_forever, prelude::*};
-use dioxus_free_icons::icons::ld_icons::{LdActivity, LdBomb, LdCat, LdCircleX, LdDrama, LdGrid3x3};
+use dioxus_free_icons::icons::ld_icons::{LdActivity, LdCat, LdCircleX, LdDrama, LdGrid3x3};
 
 use crate::{os, apps, crazyerror};
 
@@ -80,16 +80,6 @@ pub fn Desktop() -> Element {
                         icon: LdGrid3x3,
                         on_open: move |()| async move {
                             os::spawn_process(apps::tictactoe::new_tictactoe_instance());
-                        }
-                    },
-                    
-                    DesktopIcon {
-                        id: 5,
-                        selected_id,
-                        label: "minesweeper",
-                        icon: LdBomb,
-                        on_open: move |()| async move {
-                            os::spawn_process(apps::minesweeper::new_minesweeper_instance());
                         }
                     },
                 },
