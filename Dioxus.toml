@@ -3,7 +3,7 @@ tailwind_input = "tailwind.css"
 tailwind_output = "assets/styles/tailwind.css"
 
 [web.app]
-title = "inprsn-rs"
+title = "inpr.sn"
 
 [web.resource]
 style = []
