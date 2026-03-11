@@ -5,7 +5,7 @@ use std::time::Duration;
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::{apps::about::about_window, os::PROCESSES};
+use crate::{apps::about::about_window, sys::PROCESSES};
 
 pub static WINDOWS: GlobalSignal<Vec<WindowInstance>> = GlobalSignal::new(|| vec![
     // pushing to WINDOWS during DOM init is unsafe, so i do it here instead

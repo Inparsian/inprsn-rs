@@ -4,7 +4,7 @@ use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
-use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
+use crate::sys::{self, Process, WindowInstance, WindowInstanceProps};
 
 pub fn new_tictactoe_instance() -> Process {
     let mut process = Process::new("tictactoe");
@@ -14,7 +14,7 @@ pub fn new_tictactoe_instance() -> Process {
         resizable: false,
         size: ScreenCoordinates::Absolute { x: 218, y: 268 },
         on_close: Some(Rc::new(move |_| {
-            os::kill_process(pid);
+            sys::kill_process(pid);
         })),
         ..Default::default()
     }, move |_| rsx! {

@@ -1,4 +1,4 @@
-pub mod os;
+pub mod sys;
 pub mod enums;
 pub mod crazyerror;
 pub mod info;
@@ -203,7 +203,7 @@ fn Full() -> Element {
             
             div {
                 class: "windows",
-                for window in os::WINDOWS.read().iter() {
+                for window in sys::WINDOWS.read().iter() {
                     Window {
                         key: "{window.id}",
                         instance: window.clone(),

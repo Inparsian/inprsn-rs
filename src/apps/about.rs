@@ -2,7 +2,7 @@ use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
-use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
+use crate::sys::{self, Process, WindowInstance, WindowInstanceProps};
 
 #[derive(Clone, Copy, PartialEq)]
 enum AboutPage {
@@ -32,7 +32,7 @@ pub fn about_window(pid: u32) -> WindowInstance {
         title: "inparsian".to_owned(),
         size: ScreenCoordinates::Absolute { x: 520, y: 240 },
         on_close: Some(Rc::new(move |_| {
-            os::kill_process(pid);
+            sys::kill_process(pid);
         })),
         ..Default::default()
     }, move |_| rsx! {

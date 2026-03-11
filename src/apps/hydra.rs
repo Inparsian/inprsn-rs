@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 
 use crate::enums::ScreenCoordinates;
-use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
+use crate::sys::{self, Process, WindowInstance, WindowInstanceProps};
 
 pub fn new_hydra_instance() -> Process {
     let mut process = Process::new("hydra");
@@ -20,7 +20,7 @@ pub fn new_hydra_window(pid: u32) -> WindowInstance {
         resizable: false,
         position: ScreenCoordinates::Percent { x, y },
         size: ScreenCoordinates::Absolute { x: 344, y: 160 },
-        on_close: Some(Rc::new(move |_| os::with_process_mut(pid, |process| {
+        on_close: Some(Rc::new(move |_| sys::with_process_mut(pid, |process| {
             process.add_window(new_hydra_window(pid));
             process.add_window(new_hydra_window(pid));
         }))),
@@ -39,8 +39,8 @@ fn WindowHydra(pid: u32, id: Uuid) -> Element {
             span { "cut off a head, two more will take its place." },
             a {
                 onclick: move |_| {
-                    os::call_on_close(id);
-                    os::close_window(id);
+                    sys::call_on_close(id);
+                    sys::close_window(id);
                 },
                 "ok"
             }

@@ -5,7 +5,7 @@ use dioxus::prelude::*;
 
 use crate::KERNEL_PANIC;
 use crate::enums::{ScreenCoordinates};
-use crate::os::{self, Process, WindowInstance, WindowInstanceProps};
+use crate::sys::{self, Process, WindowInstance, WindowInstanceProps};
 
 static MARISA_ACTIVE: GlobalSignal<bool> = GlobalSignal::new(|| false);
 
@@ -100,10 +100,10 @@ pub async fn run() {
     let credits = credits_window();
     let id = credits.id;
     process.add_window(credits);
-    os::spawn_process(process);
+    sys::spawn_process(process);
     *MARISA_ACTIVE.write() = true;
     gloo_timers::future::sleep(Duration::from_millis(2000)).await;
-    os::close_window(id);
+    sys::close_window(id);
     hallo(pid).await;
 }
 
@@ -111,7 +111,7 @@ async fn hallo(pid: u32) {
     // stop this immediately if one of the following is true:
     // 1. this pid does not exist anymore
     // 2. kernel panic
-    if !os::has_pid(pid) || *KERNEL_PANIC.read() {
+    if !sys::has_pid(pid) || *KERNEL_PANIC.read() {
         *MARISA_ACTIVE.write() = false;
         return;
     }
@@ -136,7 +136,7 @@ async fn hallo(pid: u32) {
         
         // Pop all events that are due or overdue
         while events.last().is_some_and(|(time, _)| (*time as f64 - current_ms) < 5.0) {
-            if !os::has_pid(pid) || *KERNEL_PANIC.read() {
+            if !sys::has_pid(pid) || *KERNEL_PANIC.read() {
                 break;
             }
             
@@ -144,22 +144,22 @@ async fn hallo(pid: u32) {
                 match event {
                     MarisaEvent::SpanOne { .. }
                    | MarisaEvent::SpanTwo { .. } => if let Some(window) = event.spawn() {
-                       os::with_process_mut(pid, |process| process.add_window(window));
+                       sys::with_process_mut(pid, |process| process.add_window(window));
                     },
-                    _ => os::with_process_mut(pid, |process| process.close_all_windows()),
+                    _ => sys::with_process_mut(pid, |process| process.close_all_windows()),
                 }
             }
         }
         
-        if events.is_empty() || !os::has_pid(pid) || *KERNEL_PANIC.read() {
+        if events.is_empty() || !sys::has_pid(pid) || *KERNEL_PANIC.read() {
             break;
         }
         
         gloo_timers::future::sleep(Duration::from_millis(5)).await;
     }
     
-    if os::has_pid(pid) && !*KERNEL_PANIC.read() {
-        os::with_process_mut(pid, |process| {
+    if sys::has_pid(pid) && !*KERNEL_PANIC.read() {
+        sys::with_process_mut(pid, |process| {
             process.close_all_windows();
             process.add_window(credits_window());
         });

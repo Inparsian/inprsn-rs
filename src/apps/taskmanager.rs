@@ -2,7 +2,7 @@ use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
-use crate::os::{self, PROCESSES, Process, WindowInstance, WindowInstanceProps};
+use crate::sys::{self, PROCESSES, Process, WindowInstance, WindowInstanceProps};
 
 pub fn new_taskmanager_instance() -> Process {
     let mut process = Process::new("taskmanager");
@@ -11,7 +11,7 @@ pub fn new_taskmanager_instance() -> Process {
         title: "task manager".to_owned(),
         size: ScreenCoordinates::Absolute { x: 350, y: 250 },
         on_close: Some(Rc::new(move |_| {
-            os::kill_process(pid);
+            sys::kill_process(pid);
         })),
         ..Default::default()
     }, move |_| rsx! {
@@ -44,7 +44,7 @@ fn WindowTaskManager() -> Element {
                             a {
                                 onclick: {
                                     let pid = process.id;
-                                    move |_| os::kill_process(pid)
+                                    move |_| sys::kill_process(pid)
                                 },
                                 "kill"
                             }

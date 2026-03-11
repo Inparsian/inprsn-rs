@@ -1,6 +1,6 @@
 use dioxus::{html::input_data::MouseButton, prelude::*};
 
-use crate::os::{self, WINDOWS};
+use crate::sys::{self, WINDOWS};
 
 pub const BAR_HEIGHT_PX: u32 = 24;
 
@@ -34,14 +34,14 @@ pub fn Bar() -> Element {
                             let focused = window.focused;
                             let iconified = window.iconified;
                             move |evt| if evt.trigger_button() == Some(MouseButton::Auxiliary) {
-                                os::call_on_close(id);
-                                os::close_window(id);
+                                sys::call_on_close(id);
+                                sys::close_window(id);
                             } else if !iconified && focused {
-                                os::with_window_mut(id, |window| window.iconified = true);
-                                os::set_window_focused(id, false);
+                                sys::with_window_mut(id, |window| window.iconified = true);
+                                sys::set_window_focused(id, false);
                             } else {
-                                os::with_window_mut(id, |window| window.iconified = false);
-                                os::set_window_focused(id, true);
+                                sys::with_window_mut(id, |window| window.iconified = false);
+                                sys::set_window_focused(id, true);
                             }
                         },
                         

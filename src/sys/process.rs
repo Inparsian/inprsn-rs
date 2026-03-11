@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::os::WINDOWS;
+use crate::sys::WINDOWS;
 
 use super::WindowInstance;
 

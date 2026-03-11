@@ -5,7 +5,7 @@ use icon::DesktopIcon;
 use dioxus::{core::spawn_forever, prelude::*};
 use dioxus_free_icons::icons::ld_icons::{LdActivity, LdCat, LdCircleX, LdDrama, LdGrid3x3};
 
-use crate::{os, apps, crazyerror};
+use crate::{sys, apps, crazyerror};
 
 #[component]
 pub fn Desktop() -> Element {
@@ -33,7 +33,7 @@ pub fn Desktop() -> Element {
                         label: "about",
                         icon: LdCat,
                         on_open: move |()| {
-                            os::spawn_process(apps::about::new_about_instance());
+                            sys::spawn_process(apps::about::new_about_instance());
                         }
                     },
                     
@@ -43,7 +43,7 @@ pub fn Desktop() -> Element {
                         label: "tasks",
                         icon: LdActivity,
                         on_open: move |()| {
-                            os::spawn_process(apps::taskmanager::new_taskmanager_instance());
+                            sys::spawn_process(apps::taskmanager::new_taskmanager_instance());
                         }
                     },
                 },
@@ -66,7 +66,7 @@ pub fn Desktop() -> Element {
                         label: "hydra",
                         icon: LdDrama,
                         on_open: move |()| {
-                            os::spawn_process(apps::hydra::new_hydra_instance());
+                            sys::spawn_process(apps::hydra::new_hydra_instance());
                         }
                     },
                 },
@@ -79,7 +79,7 @@ pub fn Desktop() -> Element {
                         label: "tictactoe",
                         icon: LdGrid3x3,
                         on_open: move |()| async move {
-                            os::spawn_process(apps::tictactoe::new_tictactoe_instance());
+                            sys::spawn_process(apps::tictactoe::new_tictactoe_instance());
                         }
                     },
                 },
