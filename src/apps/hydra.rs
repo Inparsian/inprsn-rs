@@ -14,7 +14,6 @@ pub fn new_hydra_instance() -> Process {
 pub fn new_hydra_window(pid: u32) -> WindowInstance {
     let x = rand::random::<f32>() * 100.0;
     let y = rand::random::<f32>() * 100.0;
-    info!("new_hydra_window: pid={}", pid);
     
     WindowInstance::new(WindowInstanceProps {
         title: "hydra".to_owned(),
