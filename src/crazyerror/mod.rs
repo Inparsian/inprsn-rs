@@ -152,9 +152,6 @@ async fn hallo(pid: u32) {
         }
         
         if events.is_empty() || !os::has_pid(pid) || *KERNEL_PANIC.read() {
-            if let Err(e) = audio.pause() {
-                error!("Failed to pause audio: {:?}", e);
-            }
             break;
         }
         
@@ -168,6 +165,8 @@ async fn hallo(pid: u32) {
         });
         let remaining_duration = audio.duration() - audio.current_time();
         gloo_timers::future::sleep(Duration::from_millis((remaining_duration * 1000.0) as u64)).await;
+    } else if let Err(e) = audio.pause() {
+        error!("Failed to pause audio: {:?}", e);
     }
     *MARISA_ACTIVE.write() = false;
 }
