@@ -18,7 +18,7 @@ pub fn Bar() -> Element {
                         class: {
                             let mut classes = vec!["bar-task"];
                             
-                            if window.focused {
+                            if window.focused && !window.iconified {
                                 classes.push("focused");
                             }
                             
