@@ -9,7 +9,7 @@ use crate::{apps::about::about_window, os::PROCESSES};
 
 pub static WINDOWS: GlobalSignal<Vec<WindowInstance>> = GlobalSignal::new(|| vec![
     // pushing to WINDOWS during DOM init is unsafe, so i do it here instead
-    about_window(0)
+    about_window(2)
 ]);
 
 pub fn with_window<F>(window_id: Uuid, f: F)
