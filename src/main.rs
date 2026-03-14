@@ -23,6 +23,7 @@ const TAILWIND_CSS: Asset = asset!("/assets/styles/tailwind.css");
 
 // State
 pub const KERNEL_PANIC: GlobalSignal<bool> = GlobalSignal::new(|| false);
+pub const ALT_PRESSED: GlobalSignal<bool> = GlobalSignal::new(|| false);
 
 // Router
 #[derive(Routable, Clone, PartialEq, Eq)]
@@ -39,6 +40,45 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    // global key states
+    use_effect(move || {
+        use wasm_bindgen::closure::Closure;
+        use wasm_bindgen::JsCast as _;
+
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+
+        // keydown
+        let keydown_cb = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+            if e.key() == "Alt" || e.key() == "AltGraph" {
+                *ALT_PRESSED.write() = true;
+            }
+        }));
+        let _ = window.add_event_listener_with_callback(
+            "keydown",
+            keydown_cb.as_ref().unchecked_ref(),
+        );
+
+        // keyup
+        let keyup_cb = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+            if e.key() == "Alt" || e.key() == "AltGraph" {
+                *ALT_PRESSED.write() = false;
+            }
+        }));
+        let _ = window.add_event_listener_with_callback("keyup", keyup_cb.as_ref().unchecked_ref());
+
+        // in case of alt+tab / focus loss
+        let blur_cb = Closure::<dyn FnMut(web_sys::FocusEvent)>::wrap(Box::new(move |_e: web_sys::FocusEvent| {
+            *ALT_PRESSED.write() = false;
+        }));
+        let _ = window.add_event_listener_with_callback("blur", blur_cb.as_ref().unchecked_ref());
+
+        keydown_cb.forget();
+        keyup_cb.forget();
+        blur_cb.forget();
+    });
+
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         Router::<Route> {}

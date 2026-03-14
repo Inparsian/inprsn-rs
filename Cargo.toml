@@ -16,7 +16,7 @@ lru = "0.16.3"
 rand = { version = "0.10.0", features = ["thread_rng"] }
 uuid = { version = "1.21.0", features = ["v4", "js"] }
 wasm-bindgen = "0.2.114"
-web-sys = { version = "0.3.91", features = ["HtmlAudioElement", "MouseEvent", "Performance"] }
+web-sys = { version = "0.3.91", features = ["HtmlAudioElement", "KeyboardEvent", "FocusEvent", "MouseEvent", "Performance"] }
 
 [features]
 default = ["web"]
