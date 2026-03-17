@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use chrono::TimeZone as _;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
@@ -30,7 +31,7 @@ impl AboutPage {
 pub fn about_window(pid: u32) -> WindowInstance {
     WindowInstance::new(WindowInstanceProps {
         title: "inparsian".to_owned(),
-        size: ScreenCoordinates::Absolute { x: 520, y: 240 },
+        size: ScreenCoordinates::Absolute { x: 560, y: 240 },
         on_close: Some(Rc::new(move |_| {
             sys::kill_process(pid);
         })),
@@ -48,8 +49,15 @@ pub fn new_about_instance() -> Process {
     process
 }
 
+fn calculate_age() -> f64 {
+    let birth = chrono::Utc.with_ymd_and_hms(2005, 7, 12, 0, 0, 0).unwrap();
+    let now = chrono::Utc::now();
+    let since = now.signed_duration_since(birth);
+    since.num_milliseconds() as f64 / 31_557_600_000.0
+}
+
 #[component]
-fn HomePage() -> Element {
+fn HomePage(age: Signal<f64>) -> Element {
     rsx! {
         div {
             id: "about-home-page",
@@ -62,7 +70,9 @@ fn HomePage() -> Element {
     
             div {
                 p {
-                    "hi, i'm inparsian. i'm some dumb 20 y.o. american dude who makes software"
+                    "hi, i'm inparsian. i'm some dumb "
+                    span { "{age:.9}" }
+                    " y.o. american dude who makes software"
                 }
                 
                 br {}
@@ -138,6 +148,15 @@ fn SocialsPage() -> Element {
 #[component]
 fn WindowAbout() -> Element {
     let mut page = use_signal(|| AboutPage::Home);
+    let mut age = use_signal(calculate_age);
+    
+    use_future(move || async move {
+        loop {
+            gloo_timers::future::sleep(std::time::Duration::from_millis(50)).await;
+            age.set(calculate_age());
+        }
+    });
+    
     rsx! {
         div {
             id: "about-container",
@@ -173,7 +192,7 @@ fn WindowAbout() -> Element {
                 
                 div {
                     match *page.read() {
-                        AboutPage::Home => rsx! { HomePage {} },
+                        AboutPage::Home => rsx! { HomePage { age } },
                         AboutPage::Projects => rsx! { ProjectsPage {} },
                         AboutPage::Socials => rsx! { SocialsPage {} },
                     }
