@@ -2,7 +2,6 @@ use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
-use crate::consts::{ANSI_RED, ANSI_RESET};
 use crate::services::Shell;
 use crate::sys::{self, Process, WindowInstance, WindowInstanceProps};
 
@@ -25,11 +24,12 @@ pub fn new_terminal_instance() -> Process {
 
 #[component]
 fn WindowTerminal(pid: u32) -> Element {
-    let mut shell = use_signal(Shell::default);
     let container_id = use_memo(move || format!("terminal-container-{}", pid));
     
+    let mut shell = use_signal(Shell::default);
+    
     use_effect(move || {
-        let js = format!(r#"
+        let js = format!("
             const term = new Terminal({{
                 fontFamily: 'Tamzen8x16',
                 fontSize: 16,
@@ -50,39 +50,38 @@ fn WindowTerminal(pid: u32) -> Element {
                 
                 resizeObserver.observe(container);
                 fitAddon.fit();
-                
-                term.write('{ANSI_RED}${ANSI_RESET} ');
-                
-                let currentLine = "";
             
+                // stdin
                 term.onData(e => {{
-                    if (e === '\r') {{
-                        dioxus.send(currentLine);
-                        currentLine = "";
-                    }} else if (e === '\u007f') {{ // Backspace
-                        if (currentLine.length > 0) {{
-                            currentLine = currentLine.slice(0, -1);
-                            term.write('\b \b');
-                        }}
-                    }} else {{
-                        currentLine += e;
-                        term.write(e);
-                    }}
+                    dioxus.send(e);
                 }});
                 
-                // Listen for output from Rust
+                // stdout
                 while (true) {{
                     let msg = await dioxus.recv();
-                    term.write('\r\n' + msg + '{ANSI_RED}${ANSI_RESET} ');
+                    term.write(msg);
                 }}
             }}
-        "#);
+        ");
     
         let mut eval = document::eval(&js);
         spawn(async move {
             while let Ok(input) = eval.recv::<String>().await {
-                let output = shell.with_mut(|s| s.handle_input(&input));
-                let _ = eval.send(output);
+                shell.with_mut(|s| s.handle_stdin(&input));
+            }
+        });
+        
+        spawn(async move {
+            loop {
+                let out = {
+                    let rx = shell.with(|s| s.rx.clone());
+                    match rx.recv().await {
+                        Ok(v) => v,
+                        Err(_) => break,
+                    }
+                };
+
+                let _ = eval.send(out);
             }
         });
     });
