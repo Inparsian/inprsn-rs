@@ -2,6 +2,7 @@ pub mod sys;
 pub mod enums;
 pub mod crazyerror;
 pub mod info;
+pub mod services;
 
 mod apps;
 mod components;
@@ -212,6 +213,9 @@ fn Full() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: FONTS_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+        document::Link { rel: "stylesheet", href: "https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" }
+        document::Script { src: "https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js" }
+        document::Script { src: "https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js" }
         
         if *KERNEL_PANIC.read() {
             KernelPanic {}
