@@ -1,3 +1,5 @@
+use crate::consts::{ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RESET};
+
 pub struct Shell {
     pub pwd: String,
 }
@@ -28,7 +30,7 @@ impl Shell {
         
         match command {
             "echo" => format!("{}\r\n", input),
-            "clear" => "\x1b[2J\x1b[H".to_owned(),
+            "clear" => format!("{}{}{}", ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RESET),
             "pwd" => format!("{}\r\n", self.pwd),
             "whoami" => "inparsian\r\n".to_owned(),
             "neofetch" | "fastfetch" => "ok\r\n".to_owned(),

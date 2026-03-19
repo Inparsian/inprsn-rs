@@ -2,6 +2,7 @@ use std::rc::Rc;
 use dioxus::prelude::*;
 
 use crate::enums::ScreenCoordinates;
+use crate::consts::{ANSI_RED, ANSI_RESET};
 use crate::services::Shell;
 use crate::sys::{self, Process, WindowInstance, WindowInstanceProps};
 
@@ -50,7 +51,7 @@ fn WindowTerminal(pid: u32) -> Element {
                 resizeObserver.observe(container);
                 fitAddon.fit();
                 
-                term.write('\x1B[1;31m$\x1B[0m ');
+                term.write('{ANSI_RED}${ANSI_RESET} ');
                 
                 let currentLine = "";
             
@@ -72,7 +73,7 @@ fn WindowTerminal(pid: u32) -> Element {
                 // Listen for output from Rust
                 while (true) {{
                     let msg = await dioxus.recv();
-                    term.write('\r\n' + msg + '\x1B[1;31m$\x1B[0m ');
+                    term.write('\r\n' + msg + '{ANSI_RED}${ANSI_RESET} ');
                 }}
             }}
         "#);

@@ -1,5 +1,6 @@
-pub mod sys;
 pub mod enums;
+pub mod consts;
+pub mod sys;
 pub mod crazyerror;
 pub mod info;
 pub mod services;
