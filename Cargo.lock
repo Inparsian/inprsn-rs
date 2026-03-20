@@ -2711,6 +2711,7 @@ dependencies = [
  "gloo-timers",
  "lru",
  "rand 0.10.0",
+ "shlex",
  "uuid",
  "wasm-bindgen",
  "web-sys",

@@ -85,14 +85,19 @@ impl Shell {
     }
     
     pub fn handle_cmd(&mut self) -> String {
-        let Some(command) = self.buffer.split_whitespace().next() else {
-            return String::new();
+        let Some(args) = shlex::split(&self.buffer) else {
+            return "sheesh: Invalid quotes or escape sequence\r\n".to_owned();
         };
         
-        let input = self.buffer.split_whitespace().skip(1).collect::<Vec<_>>().join(" ");
+        if args.is_empty() {
+            return String::new();
+        }
         
-        match command {
-            "echo" => format!("{}\r\n", input),
+        let command = &args[0];
+        let params = &args[1..];
+        
+        match command.as_str() {
+            "echo" => format!("{}\r\n", params.join(" ")),
             "clear" => format!("{}{}{}", ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RESET),
             "pwd" => format!("{}\r\n", self.pwd),
             "whoami" => "inparsian\r\n".to_owned(),
