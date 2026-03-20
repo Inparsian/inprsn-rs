@@ -4,6 +4,11 @@ pub struct Shell {
     pub pwd: String,
     pub buffer: String,
     pub pos: usize,
+    // This is temporary until I establish a persistent VFS with a .sheesh_history file
+    pub history: Vec<String>,
+    pub history_pos: Option<usize>,
+    // Stores the current line whilst browsing history
+    pub temp_buffer: Option<String>,
     pub tx: async_channel::Sender<String>,
     pub rx: async_channel::Receiver<String>,
 }
@@ -14,6 +19,9 @@ impl Default for Shell {
         let sh = Self {
             pwd: "/home/inparsian".to_owned(),
             buffer: String::new(),
+            history: Vec::new(),
+            history_pos: None,
+            temp_buffer: None,
             pos: 0,
             tx,
             rx,
@@ -25,7 +33,7 @@ impl Default for Shell {
 }
 
 impl Shell {
-    pub fn prompt(&self) -> String {
+    fn prompt(&self) -> String {
         let path = if self.pwd == "/home/inparsian" {
             "~"
         } else {
@@ -35,7 +43,7 @@ impl Shell {
         format!("{path} {ANSI_RED}›{ANSI_RESET} ")
     }
     
-    pub fn move_cursor(&mut self, delta: i32) -> String {
+    fn move_cursor(&mut self, delta: i32) -> String {
         let new_pos = (self.pos as i32 + delta).clamp(0, self.buffer.len() as i32) as usize;
         if new_pos != self.pos {
             let out = if delta > 0 {
@@ -50,9 +58,78 @@ impl Shell {
         }
     }
     
+    fn backspace(&mut self) -> String {
+        if self.pos == 0 {
+            return String::new();
+        }
+    
+        let prev_char_idx = self.buffer[..self.pos]
+            .char_indices()
+            .next_back()
+            .map_or(0, |(i, _)| i);
+    
+        self.buffer.remove(prev_char_idx);
+        self.pos = prev_char_idx;
+    
+        let rest = &self.buffer[self.pos..];
+        let rest_char_count = rest.chars().count();
+    
+        if rest.is_empty() {
+            "\x1B[D\x1B[K".to_owned()
+        } else {
+            format!("\x1B[D\x1B[K{}\x1B[{}D", rest, rest_char_count)
+        }
+    }
+    
+    fn history_up(&mut self) -> String {
+       if self.history.is_empty() {
+           return String::new();
+       }
+
+       if let Some(idx) = self.history_pos && idx > 0 {
+           self.history_pos = Some(idx - 1);
+       } else {
+           self.temp_buffer = Some(self.buffer.clone());
+           self.history_pos = Some(self.history.len() - 1);
+       }
+
+       self.update_line_from_history()
+    }
+    
+    fn history_down(&mut self) -> String {
+        let Some(idx) = self.history_pos else {
+            return String::new();
+        };
+        
+        if idx + 1 >= self.history.len() {
+            self.history_pos = None;
+            self.buffer = self.temp_buffer.clone().unwrap_or_default();
+            self.temp_buffer = None;
+        } else {
+            self.history_pos = Some(idx + 1);
+        }
+    
+        self.update_line_from_history()
+    }
+    
+    fn update_line_from_history(&mut self) -> String {
+        if let Some(idx) = self.history_pos {
+            self.buffer = self.history[idx].clone();
+        }
+        self.pos = self.buffer.len();
+        format!("\r{}{}\x1B[K{}", self.prompt(), self.buffer, "")
+    }
+    
     pub fn handle_stdin(&mut self, key: &str) {
         match key {
-            "\x1B[A" | "\x1B[B" => {}, // up | down
+            "\x1B[A" => { // up
+                let res = self.history_up();
+                let _ = self.tx.try_send(res);
+            },
+            "\x1B[B" => { // down
+                let res = self.history_down();
+                let _ = self.tx.try_send(res);
+            },
             "\x1B[C" => { // right
                 let res = self.move_cursor(1);
                 let _ = self.tx.try_send(res);
@@ -62,16 +139,21 @@ impl Shell {
                 let _ = self.tx.try_send(res);
             },
             "\r" => {
-                let _ = self.tx.try_send("\r\n".to_owned());
-                let result = self.handle_cmd();
+                let cmd = self.buffer.clone();
+                if !cmd.is_empty() {
+                    self.history.push(cmd.clone());
+                }
+                self.history_pos = None;
                 self.buffer.clear();
                 self.pos = 0;
+                let _ = self.tx.try_send("\r\n".to_owned());
+                let result = self.handle_cmd(&cmd);
                 let _ = self.tx.try_send(result);
                 let _ = self.tx.try_send(self.prompt());
             },
             "\u{7f}" => {
-                self.buffer.pop();
-                let _ = self.tx.try_send("\u{0008} \u{0008}".to_owned());
+                let res = self.backspace();
+                let _ = self.tx.try_send(res);
             },
             _ => if key.chars().all(|c| !c.is_control()) {
                 self.buffer.insert_str(self.pos, key);
@@ -84,8 +166,8 @@ impl Shell {
         }
     }
     
-    pub fn handle_cmd(&mut self) -> String {
-        let Some(args) = shlex::split(&self.buffer) else {
+    pub fn handle_cmd(&mut self, cmd: &str) -> String {
+        let Some(args) = shlex::split(cmd) else {
             return "sheesh: Invalid quotes or escape sequence\r\n".to_owned();
         };
         
