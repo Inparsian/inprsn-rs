@@ -1,4 +1,7 @@
-use crate::consts::{ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RESET, ANSI_RED};
+use std::fmt::Write as _;
+use dioxus::signals::ReadableExt as _;
+
+use crate::{consts::{ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RED, ANSI_RESET}, sys};
 
 pub struct Shell {
     pub pwd: String,
@@ -184,6 +187,31 @@ impl Shell {
             "pwd" => format!("{}\r\n", self.pwd),
             "whoami" => "inparsian\r\n".to_owned(),
             "neofetch" | "fastfetch" => "ok\r\n".to_owned(),
+            "kill" => if params.is_empty() {
+                "kill: not enough arguments\r\n".to_owned()
+            } else {
+                // kill usually can take a exit signal code as an argument,
+                // however our process manager can only kill processes (sig 9) at the moment.
+                // as such we'll only take pids
+                params[0].parse::<u32>().map_or_else(
+                    |_| format!("kill: cannot find process \"{}\"\r\n", params[0]),
+                    |pid| if sys::has_pid(pid) {
+                        sys::kill_process(pid);
+                        String::new()
+                    } else {
+                        format!("kill: sending signal to {} failed: No such process\r\n", pid)
+                    }
+                )
+            },
+            "ps" => {
+                // simple ahh implementation until these commands are put into their
+                // own separate modules
+                let mut out = format!("{:<5} {:<10}\r\n", "PID", "COMMAND");
+                for proc in sys::PROCESSES.read().iter() {
+                    let _ = write!(&mut out, "{:<5} {:<10}\r\n", proc.id, proc.name);
+                }
+                out
+            },
             _ => {
                 let mut unknown = "sheesh: Unknown command: ".to_owned();
                 unknown.push_str(command);
