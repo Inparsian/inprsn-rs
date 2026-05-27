@@ -1,7 +1,7 @@
 use std::fmt::Write as _;
 use dioxus::signals::ReadableExt as _;
 
-use crate::{consts::{ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RED, ANSI_RESET}, sys};
+use crate::{consts::{ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RED, ANSI_RESET}, services::fs::{FILESYSTEM, FilesystemData}, sys};
 
 pub struct Shell {
     pub pwd: String,
@@ -187,6 +187,66 @@ impl Shell {
             "pwd" => format!("{}\r\n", self.pwd),
             "whoami" => "inparsian\r\n".to_owned(),
             "neofetch" | "fastfetch" => "ok\r\n".to_owned(),
+            "cd" => {
+                if params.is_empty() {
+                    self.pwd = "/home/inparsian".to_owned();
+                    return String::new();
+                }
+
+                let path = params[0].clone();
+                let reader = FILESYSTEM.read().unwrap();
+                if let Some(query) = reader.resolve_read(&path, Some(&self.pwd)) {
+                    match &query.data {
+                        FilesystemData::Directory { .. } => {
+                            self.pwd = reader.resolve_path(&path, Some(&self.pwd)).unwrap();
+                            String::new()
+                        },
+                        FilesystemData::File { .. } |
+                        FilesystemData::SymbolicLink { .. } => {
+                            format!("cd: {}: Not a directory\r\n", path)
+                        },
+                    }
+                } else {
+                    format!("cd: {}: No such file or directory\r\n", path)
+                }
+            }
+            "ls" => {
+                let path = params.first().unwrap_or(&self.pwd);
+                
+                FILESYSTEM.read().unwrap().resolve_read(path, Some(&self.pwd)).map_or_else(
+                    || format!("ls: cannot access '{}': No such file or directory\r\n", path),
+                    |query| match &query.data {
+                        FilesystemData::Directory { children } => {
+                            children.iter().fold(String::new(), |mut out, child| {
+                                let _ = write!(&mut out, "{}\r\n", child.name);
+                                out
+                            })
+                        },
+                        FilesystemData::File { .. } |
+                        FilesystemData::SymbolicLink { .. } => format!("{}\r\n", query.name),
+                    })
+            },
+            "cat" => if params.is_empty() {
+                "cat: not enough arguments\r\n".to_owned()
+            } else {
+                let path = params.first().unwrap();
+                let reader = FILESYSTEM.read().unwrap();
+                let content = reader.read_file(path, Some(&self.pwd));
+                content.map_or_else(
+                    |err| format!("cat: {}\r\n", err),
+                    |content| format!("{}\r\n", String::from_utf8_lossy(content).into_owned()),
+                )
+            },
+            "rm" => if params.is_empty() {
+                "rm: not enough arguments\r\n".to_owned()
+            } else {
+                // TODO: flags
+                let path = params.first().unwrap();
+                FILESYSTEM.write().unwrap().remove(path, Some(&self.pwd)).map_or_else(
+                    |err| format!("rm: {}\r\n", err),
+                    |()| String::new(),
+                )
+            },
             "kill" => if params.is_empty() {
                 "kill: not enough arguments\r\n".to_owned()
             } else {

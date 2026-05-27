@@ -10,6 +10,7 @@ edition = "2024"
 async-channel = "2.5.0"
 chrono = "0.4.44"
 dioxus = { version = "0.7.9", features = ["fullstack", "router"] }
+dioxus-cookie = "0.2.0"
 dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 getrandom = { version = "0.4.2", features = ["wasm_js"] }
 gloo-timers = { version = "0.3.0", features = ["futures"] }

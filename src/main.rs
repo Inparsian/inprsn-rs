@@ -37,6 +37,7 @@ pub enum Route {
 }
 
 fn main() {
+    dioxus_cookie::init();
     dioxus::launch(App);
 }
 
