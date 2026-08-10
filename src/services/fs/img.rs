@@ -13,6 +13,8 @@ pub fn bin() -> Vec<FilesystemEntry> {
         FilesystemEntry::new_file("ls", "List directory contents"),
         FilesystemEntry::new_file("cat", "Concatenate files and print on the standard output"),
         FilesystemEntry::new_file("rm", "Remove files or directories"),
+        FilesystemEntry::new_file("touch", "Create an empty file or update the timestamp of an existing file"),
+        FilesystemEntry::new_file("mkdir", "Create a directory"),
         FilesystemEntry::new_file("kill", "Terminate a process"),
         FilesystemEntry::new_file("ps", "List processes"),
     ]

@@ -11,6 +11,8 @@ pub mod uname;
 pub mod ls;
 pub mod cat;
 pub mod rm;
+pub mod touch;
+pub mod mkdir;
 pub mod kill;
 pub mod ps;
 
@@ -25,6 +27,8 @@ pub static BINS: LazyLock<Vec<&'static dyn Command>> = LazyLock::new(|| {
         &ls::LS,
         &cat::CAT,
         &rm::RM,
+        &touch::TOUCH,
+        &mkdir::MKDIR,
         &kill::KILL,
         &ps::PS,
     ]
