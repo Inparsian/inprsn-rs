@@ -27,7 +27,7 @@ impl Command for Cat {
         }
     }
 
-    fn complete(&self, _ctx: &mut CommandContext, _args: &[String], _cursor: usize) -> Vec<String> {
-        Vec::new()
+    fn complete(&self, ctx: &mut CommandContext, args: &[String], _cursor: usize) -> Vec<String> {
+        super::complete_path(ctx, args, 0, false)
     }
 }

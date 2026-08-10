@@ -137,6 +137,18 @@ impl Filesystem {
         Self::resolve_in_entries(&self.root, &resolved_path_parts)
     }
 
+    pub fn resolve_read_dir(&self, path: &str, pwd: Option<&str>) -> Option<Vec<FilesystemEntry>> {
+        let resolved_path = Self::resolve_parts(path, pwd)?;
+        let resolved_path_parts = resolved_path.iter().map(String::as_str).collect::<Vec<_>>();
+        let entry = Self::resolve_in_entries(&self.root, &resolved_path_parts)?;
+        
+        // directory?
+        match &entry.data {
+            FilesystemData::Directory { children } => Some(children.clone()),
+            _ => None,
+        }
+    }
+
     pub fn resolve_write(&mut self, path: &str, pwd: Option<&str>) -> Option<&mut FilesystemEntry> {
         let resolved_path = Self::resolve_parts(path, pwd)?;
         let resolved_path_parts = resolved_path.iter().map(String::as_str).collect::<Vec<_>>();
