@@ -1,7 +1,5 @@
-use std::fmt::Write as _;
-use dioxus::signals::ReadableExt as _;
-
-use crate::{consts::{ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RED, ANSI_RESET}, services::fs::{FILESYSTEM, FilesystemData}, sys};
+use super::bins::{self, CommandContext};
+use crate::{consts::{ANSI_RED, ANSI_RESET}, services::fs::{FILESYSTEM, FilesystemData}};
 
 pub struct Shell {
     pub pwd: String,
@@ -181,103 +179,56 @@ impl Shell {
         let command = &args[0];
         let params = &args[1..];
         
-        match command.as_str() {
-            "echo" => format!("{}\r\n", params.join(" ")),
-            "clear" => format!("{}{}{}", ANSI_CLEAR_SCREEN, ANSI_CURSOR_HOME, ANSI_RESET),
-            "pwd" => format!("{}\r\n", self.pwd),
-            "whoami" => "inparsian\r\n".to_owned(),
-            "neofetch" | "fastfetch" => "ok\r\n".to_owned(),
-            "cd" => {
-                if params.is_empty() {
-                    self.pwd = "/home/inparsian".to_owned();
-                    return String::new();
-                }
+        if command.as_str() == "cd" {
+            if params.is_empty() {
+                self.pwd = "/home/inparsian".to_owned();
+                return String::new();
+            }
 
-                let path = params[0].clone();
-                let reader = FILESYSTEM.read().unwrap();
-                if let Some(query) = reader.resolve_read(&path, Some(&self.pwd)) {
-                    match &query.data {
-                        FilesystemData::Directory { .. } => {
-                            self.pwd = reader.resolve_path(&path, Some(&self.pwd)).unwrap();
-                            String::new()
-                        },
-                        FilesystemData::File { .. } |
-                        FilesystemData::SymbolicLink { .. } => {
-                            format!("cd: {}: Not a directory\r\n", path)
-                        },
-                    }
-                } else {
-                    format!("cd: {}: No such file or directory\r\n", path)
+            let path = params[0].clone();
+            let reader = FILESYSTEM.read().unwrap();
+            if let Some(query) = reader.resolve_read(&path, Some(&self.pwd)) {
+                match &query.data {
+                    FilesystemData::Directory { .. } => {
+                        self.pwd = reader.resolve_path(&path, Some(&self.pwd)).unwrap();
+                        String::new()
+                    },
+                    FilesystemData::File { .. } |
+                    FilesystemData::SymbolicLink { .. } => {
+                        format!("cd: {}: Not a directory\r\n", path)
+                    },
+                }
+            } else {
+                format!("cd: {}: No such file or directory\r\n", path)
+            }
+        } else {
+            // see if it's in our static bins, then find it in the fs to see if it can be run
+            if let Some(bin) = bins::find(command) {
+                let bin_candidates = [
+                    format!("/home/inparsian/.local/bin/{}", bin.name()),
+                    format!("/usr/local/bin/{}", bin.name()),
+                    format!("/usr/bin/{}", bin.name()),
+                    format!("/bin/{}", bin.name())
+                ];
+                
+                let exists = {
+                    let reader = FILESYSTEM.read().unwrap();
+                    bin_candidates.iter().any(|c| reader.resolve_read(c, None).is_some())
+                };
+
+                if exists {
+                    let mut ctx = CommandContext {
+                        pwd: &mut self.pwd,
+                    };
+                    
+                    return bin.run(&mut ctx, params);
                 }
             }
-            "ls" => {
-                let path = params.first().unwrap_or(&self.pwd);
-                
-                FILESYSTEM.read().unwrap().resolve_read(path, Some(&self.pwd)).map_or_else(
-                    || format!("ls: cannot access '{}': No such file or directory\r\n", path),
-                    |query| match &query.data {
-                        FilesystemData::Directory { children } => {
-                            children.iter().fold(String::new(), |mut out, child| {
-                                let _ = write!(&mut out, "{}\r\n", child.name);
-                                out
-                            })
-                        },
-                        FilesystemData::File { .. } |
-                        FilesystemData::SymbolicLink { .. } => format!("{}\r\n", query.name),
-                    })
-            },
-            "cat" => if params.is_empty() {
-                "cat: not enough arguments\r\n".to_owned()
-            } else {
-                let path = params.first().unwrap();
-                let reader = FILESYSTEM.read().unwrap();
-                let content = reader.read_file(path, Some(&self.pwd));
-                content.map_or_else(
-                    |err| format!("cat: {}\r\n", err),
-                    |content| format!("{}\r\n", String::from_utf8_lossy(content).into_owned()),
-                )
-            },
-            "rm" => if params.is_empty() {
-                "rm: not enough arguments\r\n".to_owned()
-            } else {
-                // TODO: flags
-                let path = params.first().unwrap();
-                FILESYSTEM.write().unwrap().remove(path, Some(&self.pwd)).map_or_else(
-                    |err| format!("rm: {}\r\n", err),
-                    |()| String::new(),
-                )
-            },
-            "kill" => if params.is_empty() {
-                "kill: not enough arguments\r\n".to_owned()
-            } else {
-                // kill usually can take a exit signal code as an argument,
-                // however our process manager can only kill processes (sig 9) at the moment.
-                // as such we'll only take pids
-                params[0].parse::<u32>().map_or_else(
-                    |_| format!("kill: cannot find process \"{}\"\r\n", params[0]),
-                    |pid| if sys::has_pid(pid) {
-                        sys::kill_process(pid);
-                        String::new()
-                    } else {
-                        format!("kill: sending signal to {} failed: No such process\r\n", pid)
-                    }
-                )
-            },
-            "ps" => {
-                // simple ahh implementation until these commands are put into their
-                // own separate modules
-                let mut out = format!("{:<5} {:<10}\r\n", "PID", "COMMAND");
-                for proc in sys::PROCESSES.read().iter() {
-                    let _ = write!(&mut out, "{:<5} {:<10}\r\n", proc.id, proc.name);
-                }
-                out
-            },
-            _ => {
-                let mut unknown = "sheesh: Unknown command: ".to_owned();
-                unknown.push_str(command);
-                unknown.push_str("\r\n");
-                unknown
-            },
+            
+            let mut unknown = "sheesh: Unknown command: ".to_owned();
+            unknown.push_str(command);
+            unknown.push_str("\r\n");
+            unknown
         }
     }
 }

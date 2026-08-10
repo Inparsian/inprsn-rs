@@ -29,7 +29,7 @@ pub fn image() -> Vec<FilesystemEntry> {
             FilesystemEntry::new_file("vmlinuz-linux", "Linux kernel image 6.9.7-arch1-1"),
             FilesystemEntry::new_file("initramfs-linux.img", "Primary initramfs image"),
             FilesystemEntry::new_dir("grub", vec![
-                FilesystemEntry::new_file("grub.cfg", "set default=0\nset timeout=5\n\nmenuentry \"Arch Linux\" {\n    linux /vmlinuz-linux root=UUID=BtWwb66M-7YKy-S6j7-PSPk-sEovrVwHJpnbr rw quiet\n    initrd /initramfs-linux.img\n}\n\nmenuentry \"Arch Linux (fallback initramfs)\" {\n    linux /vmlinuz-linux root=UUID=BtWwb66M-7YKy-S6j7-PSPk-sEovrVwHJpnbr rw\n    initrd /initramfs-linux-fallback.img\n}"),
+                FilesystemEntry::new_file("grub.cfg", "set default=0\r\nset timeout=5\r\n\r\nmenuentry \"Arch Linux\" {\r\n    linux /vmlinuz-linux root=UUID=BtWwb66M-7YKy-S6j7-PSPk-sEovrVwHJpnbr rw quiet\r\n    initrd /initramfs-linux.img\r\n}\r\n\r\nmenuentry \"Arch Linux (fallback initramfs)\" {\r\n    linux /vmlinuz-linux root=UUID=BtWwb66M-7YKy-S6j7-PSPk-sEovrVwHJpnbr rw\r\n    initrd /initramfs-linux-fallback.img\r\n}"),
             ]),
         ]),
         FilesystemEntry::new_dir("dev", vec![
@@ -42,22 +42,22 @@ pub fn image() -> Vec<FilesystemEntry> {
         FilesystemEntry::new_dir("sys", vec![]),
         FilesystemEntry::new_dir("etc", vec![
             FilesystemEntry::new_file("locale.conf", "LANG=en_US.UTF-8"),
-            FilesystemEntry::new_file("lsb-release", "DISTRIB_ID=\"Arch\"\n                        DISTRIB_RELEASE=\"rolling\"\n                        DISTRIB_DESCRIPTION=\"Arch Linux\""),
-            FilesystemEntry::new_file("passwd", "root:x:0:0:root:/root:/bin/sheesh\n                    inparsian:x:1000:1000:inparsian:/home/inparsian:/bin/sheesh"),
-            FilesystemEntry::new_file("motd", "sheesh, version 4.2.0\n                    Type <span class=\"fg-aqua-light\">help</span> for a list of commands"),
+            FilesystemEntry::new_file("lsb-release", "DISTRIB_ID=\"Arch\"\r\n                        DISTRIB_RELEASE=\"rolling\"\r\n                        DISTRIB_DESCRIPTION=\"Arch Linux\""),
+            FilesystemEntry::new_file("passwd", "root:x:0:0:root:/root:/bin/sheesh\r\n                    inparsian:x:1000:1000:inparsian:/home/inparsian:/bin/sheesh"),
+            FilesystemEntry::new_file("motd", "sheesh, version 4.2.0\r\n                    Type <span class=\"fg-aqua-light\">help</span> for a list of commands"),
             FilesystemEntry::new_file("issue", "issue? we all have issues. but you know what? i just want you to know that you are doing great! :)"),
             FilesystemEntry::new_file("hostname", "I-USE-AWCH-UWU"),
-            FilesystemEntry::new_file("hosts", "# Static table lookup for hostnames.\n                        # See hosts(5) for details.\n                        &nbsp;\n                        127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;localhost"),
-            FilesystemEntry::new_file("fstab", "# Static information about the filesystems.\n                        # See fstab(5) for details.\n                        &nbsp;\n                        # <file system> <dir> <type> <options> <dump> <pass>\n                        # /dev/sda1\n                        UUID=BtWwb66M-7YKy-S6j7-PSPk-sEovrVwHJpnbr / ext4 rw,relatime 0 1"),
+            FilesystemEntry::new_file("hosts", "# Static table lookup for hostnames.\r\n                        # See hosts(5) for details.\r\n                        &nbsp;\r\n                        127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;localhost"),
+            FilesystemEntry::new_file("fstab", "# Static information about the filesystems.\r\n                        # See fstab(5) for details.\r\n                        &nbsp;\r\n                        # <file system> <dir> <type> <options> <dump> <pass>\r\n                        # /dev/sda1\r\n                        UUID=BtWwb66M-7YKy-S6j7-PSPk-sEovrVwHJpnbr / ext4 rw,relatime 0 1"),
             FilesystemEntry::new_file("group", "root:x:0:root"),
             FilesystemEntry::new_file("gshadow", "root:::root"),
             FilesystemEntry::new_file("shadow", "I AM ATOMIC"),
-            FilesystemEntry::new_file("sudoers", "## sudoers file.\n                        ##\n                        ## This file MUST be edited with the 'visudo' command as root.\n                        ## Failing to use 'visudo' may result in syntax or file permission errors\n                        ## that prevent sudo from running.\n                        ##\n                        ## See the sudoers man page for the details on how to write a sudoers file.\n                        ##\n                        &nbsp;\n                        root ALL=(ALL) ALL\n                        inparsian ALL=(ALL) NOPASSWD: ALL"),
+            FilesystemEntry::new_file("sudoers", "## sudoers file.\r\n                        ##\r\n                        ## This file MUST be edited with the 'visudo' command as root.\r\n                        ## Failing to use 'visudo' may result in syntax or file permission errors\r\n                        ## that prevent sudo from running.\r\n                        ##\r\n                        ## See the sudoers man page for the details on how to write a sudoers file.\r\n                        ##\r\n                        &nbsp;\r\n                        root ALL=(ALL) ALL\r\n                        inparsian ALL=(ALL) NOPASSWD: ALL"),
         ]),
         FilesystemEntry::new_dir("home", vec![
             FilesystemEntry::new_dir("inparsian", vec![
                 FilesystemEntry::new_file("peptobisdog.txt", "what the fuck why would you cover a hotdog in pepto bis- EUUUUGH"),
-                FilesystemEntry::new_file("help.txt", &format!("This is just a simulated shell, so not everything works. However, it's more complete than you think. Here are some commands you can try:\n{}help{} - show this message\n{}clear{} - clear the terminal\n{}echo{} - echo the input\n{}exit{} - close the terminal", consts::ANSI_RED, consts::ANSI_RESET, consts::ANSI_RED, consts::ANSI_RESET, consts::ANSI_RED, consts::ANSI_RESET, consts::ANSI_RED, consts::ANSI_RESET)),
+                FilesystemEntry::new_file("help.txt", &format!("This is just a simulated shell, so not everything works. However, it's more complete than you think. Here are some commands you can try:\r\n{}help{} - show this message\r\n{}clear{} - clear the terminal\r\n{}echo{} - echo the input\r\n{}exit{} - close the terminal", consts::ANSI_RED, consts::ANSI_RESET, consts::ANSI_RED, consts::ANSI_RESET, consts::ANSI_RED, consts::ANSI_RESET, consts::ANSI_RED, consts::ANSI_RESET)),
                 FilesystemEntry::new_file(".sheesh_history", ""),
             ]),
         ]),
