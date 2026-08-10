@@ -9,7 +9,7 @@ pub fn bin() -> Vec<FilesystemEntry> {
         FilesystemEntry::new_file("pwd", "Print name of current/working directory"),
         FilesystemEntry::new_file("whoami", "Print the current user"),
         FilesystemEntry::new_file("neofetch", "A fast, highly customizable system info script"),
-        FilesystemEntry::new_file("cd", "Change the shell working directory"),
+        FilesystemEntry::new_file("uname", "Print system information"),
         FilesystemEntry::new_file("ls", "List directory contents"),
         FilesystemEntry::new_file("cat", "Concatenate files and print on the standard output"),
         FilesystemEntry::new_file("rm", "Remove files or directories"),

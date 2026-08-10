@@ -7,6 +7,7 @@ pub mod clear;
 pub mod pwd;
 pub mod whoami;
 pub mod neofetch;
+pub mod uname;
 pub mod ls;
 pub mod cat;
 pub mod rm;
@@ -20,6 +21,7 @@ pub static BINS: LazyLock<Vec<&'static dyn Command>> = LazyLock::new(|| {
         &pwd::PWD,
         &whoami::WHOAMI,
         &neofetch::NEOFETCH,
+        &uname::UNAME,
         &ls::LS,
         &cat::CAT,
         &rm::RM,
