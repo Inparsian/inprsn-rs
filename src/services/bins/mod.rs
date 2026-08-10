@@ -47,12 +47,40 @@ pub fn find(name: &str) -> Option<&'static dyn Command> {
 pub trait Command: Sync {
     fn name(&self) -> &'static str;
     fn aliases(&self) -> &'static [&'static str];
-    fn run(&self, ctx: &mut CommandContext, args: &[String]) -> String;
+    fn run(&self, ctx: &mut CommandContext, args: &[String], stdin: Option<&str>) -> CommandResult;
     fn complete(&self, ctx: &mut CommandContext, args: &[String], cursor: usize) -> Vec<String>;
 }
 
 pub struct CommandContext<'a> {
     pub pwd: &'a mut String,
+}
+
+pub struct CommandResult {
+    pub output: String, // stdout
+    pub error: String,  // stderr
+    pub status: i32,
+}
+
+impl CommandResult {
+    pub fn ok(output: impl Into<String>) -> Self {
+        Self {
+            output: output.into(),
+            error: String::new(),
+            status: 0,
+        }
+    }
+
+    pub fn err(error: impl Into<String>) -> Self {
+        Self {
+            output: String::new(),
+            error: error.into(),
+            status: 1,
+        }
+    }
+
+    pub fn render(&self) -> String {
+        format!("{}{}", self.output, self.error)
+    }
 }
 
 // complete helpers

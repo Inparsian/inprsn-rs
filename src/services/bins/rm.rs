@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 
-use super::{Command, CommandContext};
+use super::{Command, CommandContext, CommandResult};
 use crate::services::fs::{FILESYSTEM, FilesystemData};
 
 pub struct Rm;
@@ -15,7 +15,7 @@ impl Command for Rm {
         &[]
     }
 
-    fn run(&self, ctx: &mut CommandContext, args: &[String]) -> String {
+    fn run(&self, ctx: &mut CommandContext, args: &[String], _stdin: Option<&str>) -> CommandResult {
         let mut recursive = false;
         let mut force = false;
         let mut paths: Vec<&String> = Vec::new();
@@ -32,7 +32,7 @@ impl Command for Rm {
                     match ch {
                         'r' => recursive = true,
                         'f' => force = true,
-                        _ => return format!("rm: invalid option -- '{}'\r\n", ch),
+                        _ => return CommandResult::err(format!("rm: invalid option -- '{}'\r\n", ch)),
                     }
                 }
             } else {
@@ -42,9 +42,9 @@ impl Command for Rm {
 
         if paths.is_empty() {
             return if force {
-                String::new()
+                CommandResult::ok(String::new())
             } else {
-                "rm: not enough arguments\r\n".to_owned()
+                CommandResult::err("rm: not enough arguments\r\n")
             };
         }
 
@@ -77,7 +77,11 @@ impl Command for Rm {
             }
         }
 
-        out
+        if out.is_empty() {
+            CommandResult::ok(out)
+        } else {
+            CommandResult::err(out)
+        }
     }
 
     fn complete(&self, ctx: &mut CommandContext, args: &[String], _cursor: usize) -> Vec<String> {

@@ -1,4 +1,4 @@
-use super::{Command, CommandContext};
+use super::{Command, CommandContext, CommandResult};
 
 pub struct Uname;
 pub const UNAME: Uname = Uname;
@@ -42,9 +42,9 @@ impl Command for Uname {
         &[]
     }
 
-    fn run(&self, _ctx: &mut CommandContext, args: &[String]) -> String {
+    fn run(&self, _ctx: &mut CommandContext, args: &[String], _stdin: Option<&str>) -> CommandResult {
         if args.is_empty() {
-            return format!("{}\r\n", KERNEL_NAME);
+            return CommandResult::ok(format!("{}\r\n", KERNEL_NAME));
         }
 
         let mut pieces: Vec<&'static str> = Vec::new();
@@ -52,10 +52,10 @@ impl Command for Uname {
 
         for arg in args {
             if end_of_options {
-                return format!(
+                return CommandResult::err(format!(
                     "uname: extra operand '{}'\r\nTry 'uname --help' for more information.\r\n",
                     arg
-                );
+                ));
             }
 
             if arg == "--" {
@@ -64,11 +64,11 @@ impl Command for Uname {
             }
 
             if arg == "--help" {
-                return format!("{}\r\n", HELP_TEXT);
+                return CommandResult::ok(format!("{}\r\n", HELP_TEXT));
             }
 
             if arg == "--version" {
-                return format!("{}\r\n", VERSION_TEXT);
+                return CommandResult::ok(format!("{}\r\n", VERSION_TEXT));
             }
 
             if arg.starts_with("--") {
@@ -84,7 +84,7 @@ impl Command for Uname {
                     if possibilities.len() == 1 {
                         possibilities[0]
                     } else if !possibilities.is_empty() {
-                        return format!(
+                        return CommandResult::err(format!(
                             "uname: option '{}' is ambiguous; possibilities: {}\r\nTry 'uname --help' for more information.\r\n",
                             arg,
                             possibilities
@@ -92,12 +92,12 @@ impl Command for Uname {
                                 .map(|p| format!("'{}'", p))
                                 .collect::<Vec<_>>()
                                 .join(" ")
-                        );
+                        ));
                     } else {
-                        return format!(
+                        return CommandResult::err(format!(
                             "uname: unrecognized option '{}'\r\nTry 'uname --help' for more information.\r\n",
                             arg
-                        );
+                        ));
                     }
                 };
 
@@ -108,7 +108,7 @@ impl Command for Uname {
             // short flags: -a, -s, -sr, etc.
             if let Some(shorts) = arg.strip_prefix('-') {
                 if shorts.is_empty() {
-                    return "uname: unrecognized option '-'\r\nTry 'uname --help' for more information.\r\n".to_owned();
+                    return CommandResult::err("uname: unrecognized option '-'\r\nTry 'uname --help' for more information.\r\n");
                 }
 
                 for ch in shorts.chars() {
@@ -123,10 +123,10 @@ impl Command for Uname {
                         'i' => push_option_output("--hardware-platform", &mut pieces),
                         'o' => push_option_output("--operating-system", &mut pieces),
                         _ => {
-                            return format!(
+                            return CommandResult::err(format!(
                                 "uname: invalid option -- '{}'\r\nTry 'uname --help' for more information.\r\n",
                                 ch
-                            );
+                            ));
                         }
                     }
                 }
@@ -134,17 +134,17 @@ impl Command for Uname {
                 continue;
             }
 
-            return format!(
+            return CommandResult::err(format!(
                 "uname: extra operand '{}'\r\nTry 'uname --help' for more information.\r\n",
                 arg
-            );
+            ));
         }
 
         if pieces.is_empty() {
             pieces.push(KERNEL_NAME);
         }
 
-        format!("{}\r\n", pieces.join(" "))
+        CommandResult::ok(format!("{}\r\n", pieces.join(" ")))
     }
 
     fn complete(&self, _ctx: &mut CommandContext, args: &[String], _cursor: usize) -> Vec<String> {

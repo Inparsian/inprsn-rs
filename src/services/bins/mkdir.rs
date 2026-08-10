@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 
-use super::{Command, CommandContext};
+use super::{Command, CommandContext, CommandResult};
 use crate::services::fs::FILESYSTEM;
 
 pub struct Mkdir;
@@ -15,7 +15,7 @@ impl Command for Mkdir {
         &[]
     }
 
-    fn run(&self, ctx: &mut CommandContext, args: &[String]) -> String {
+    fn run(&self, ctx: &mut CommandContext, args: &[String], _stdin: Option<&str>) -> CommandResult {
         let mut parents = false;
         let mut paths: Vec<&String> = Vec::new();
 
@@ -30,7 +30,7 @@ impl Command for Mkdir {
                 for ch in arg.chars().skip(1) {
                     match ch {
                         'p' => parents = true,
-                        _ => return format!("mkdir: invalid option -- '{}'\r\n", ch),
+                        _ => return CommandResult::err(format!("mkdir: invalid option -- '{}'\r\n", ch)),
                     }
                 }
             } else {
@@ -39,7 +39,7 @@ impl Command for Mkdir {
         }
 
         if paths.is_empty() {
-            return "mkdir: not enough arguments\r\n".to_owned();
+            return CommandResult::err("mkdir: not enough arguments\r\n");
         }
 
         let mut out = String::new();
@@ -56,7 +56,11 @@ impl Command for Mkdir {
             }
         }
 
-        out
+        if out.is_empty() {
+            CommandResult::ok(out)
+        } else {
+            CommandResult::err(out)
+        }
     }
 
     fn complete(&self, ctx: &mut CommandContext, args: &[String], _cursor: usize) -> Vec<String> {

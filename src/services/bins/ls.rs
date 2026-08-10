@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 
-use super::{Command, CommandContext};
+use super::{Command, CommandContext, CommandResult};
 use crate::services::fs::{FILESYSTEM, FilesystemData};
 
 pub struct Ls;
@@ -15,20 +15,21 @@ impl Command for Ls {
         &[]
     }
 
-    fn run(&self, ctx: &mut CommandContext, args: &[String]) -> String {
+    fn run(&self, ctx: &mut CommandContext, args: &[String], _stdin: Option<&str>) -> CommandResult {
         let path = args.first().unwrap_or(ctx.pwd);
-                    
+
         FILESYSTEM.read().unwrap().resolve_read(path, Some(ctx.pwd)).map_or_else(
-            || format!("ls: cannot access '{}': No such file or directory\r\n", path),
+            || CommandResult::err(format!("ls: cannot access '{}': No such file or directory\r\n", path)),
             |query| match &query.data {
                 FilesystemData::Directory { children } => {
-                    children.iter().fold(String::new(), |mut out, child| {
+                    let out = children.iter().fold(String::new(), |mut out, child| {
                         let _ = write!(&mut out, "{}\r\n", child.name);
                         out
-                    })
+                    });
+                    CommandResult::ok(out)
                 },
                 FilesystemData::File { .. } |
-                FilesystemData::SymbolicLink { .. } => format!("{}\r\n", query.name),
+                FilesystemData::SymbolicLink { .. } => CommandResult::ok(format!("{}\r\n", query.name)),
             })
     }
 

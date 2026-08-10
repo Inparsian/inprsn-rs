@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 
-use super::{Command, CommandContext};
+use super::{Command, CommandContext, CommandResult};
 use crate::services::fs::FILESYSTEM;
 
 pub struct Touch;
@@ -15,9 +15,9 @@ impl Command for Touch {
         &[]
     }
 
-    fn run(&self, ctx: &mut CommandContext, args: &[String]) -> String {
+    fn run(&self, ctx: &mut CommandContext, args: &[String], _stdin: Option<&str>) -> CommandResult {
         if args.is_empty() {
-            return "touch: not enough arguments\r\n".to_owned();
+            return CommandResult::err("touch: not enough arguments\r\n");
         }
 
         let mut out = String::new();
@@ -40,7 +40,11 @@ impl Command for Touch {
             }
         }
 
-        out
+        if out.is_empty() {
+            CommandResult::ok(out)
+        } else {
+            CommandResult::err(out)
+        }
     }
 
     fn complete(&self, ctx: &mut CommandContext, args: &[String], _cursor: usize) -> Vec<String> {

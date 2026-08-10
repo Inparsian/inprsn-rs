@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 
-use super::bins::{self, CommandContext};
+use super::bins::{self, CommandContext, CommandResult};
 use crate::{consts::{ANSI_RED, ANSI_BOLD, ANSI_BRIGHT_RED, ANSI_RESET}, services::fs::{FILESYSTEM, FilesystemData}};
 
 const MAX_COMPLETION_MENU_ITEMS: usize = 6;
@@ -382,12 +382,16 @@ impl Shell {
     
     fn current_token_bounds(&self) -> (usize, usize) {
         let before = &self.buffer[..self.pos];
-        let start = before.rfind(char::is_whitespace).map_or(0, |i| i + 1);
-    
+        let start = before
+            .rfind(|c: char| c.is_whitespace() || matches!(c, '|' | '&' | ';' | '<' | '>'))
+            .map_or(0, |i| i + 1);
+
         let after = &self.buffer[self.pos..];
-        let rel_end = after.find(char::is_whitespace).unwrap_or(after.len());
+        let rel_end = after
+            .find(|c: char| c.is_whitespace() || matches!(c, '|' | '&' | ';' | '<' | '>'))
+            .unwrap_or(after.len());
         let end = self.pos + rel_end;
-    
+
         (start, end)
     }
     
@@ -412,40 +416,67 @@ impl Shell {
     pub fn handle_complete(&mut self, buffer: &str) -> Vec<String> {
         let before_cursor = &buffer[..self.pos];
         let ends_ws = before_cursor.chars().last().is_some_and(|c| c.is_whitespace());
-    
-        let Some(args) = shlex::split(before_cursor) else {
+        let segment = completion_segment(before_cursor);
+
+        let Ok(tokens) = tokenize_shell(&segment) else {
             return Vec::new();
         };
-    
-        if args.is_empty() {
+
+        let mut command_words: Vec<String> = Vec::new();
+        let mut expecting_redir_target = false;
+        let mut last_redir_target: Option<String> = None;
+        let mut last_was_redir_target = false;
+
+        for token in &tokens {
+            match token {
+                ShellToken::Word(word) => {
+                    if expecting_redir_target {
+                        last_redir_target = Some(word.clone());
+                        expecting_redir_target = false;
+                        last_was_redir_target = true;
+                    } else {
+                        command_words.push(word.clone());
+                        last_was_redir_target = false;
+                    }
+                }
+                ShellToken::Op(ShellOp::RedirectIn | ShellOp::RedirectOut | ShellOp::RedirectAppend | ShellOp::RedirectErrOut | ShellOp::RedirectErrAppend)
+                => {
+                    expecting_redir_target = true;
+                    last_redir_target = Some(String::new());
+                    last_was_redir_target = false;
+                }
+                ShellToken::Op(ShellOp::Seq | ShellOp::AndIf | ShellOp::OrIf | ShellOp::Pipe) => {
+                    command_words.clear();
+                    expecting_redir_target = false;
+                    last_redir_target = None;
+                    last_was_redir_target = false;
+                }
+            }
+        }
+
+        if expecting_redir_target || (last_was_redir_target && !ends_ws) {
+            let partial = last_redir_target.unwrap_or_default();
+            let ctx = CommandContext { pwd: &mut self.pwd };
+            return bins::complete_path(&ctx, &[partial], 0, false);
+        }
+
+        if command_words.is_empty() {
             return command_candidates("");
         }
-    
-        if args.len() == 1 && !ends_ws {
-            return command_candidates(&args[0]);
+
+        if command_words.len() == 1 && !ends_ws {
+            return command_candidates(&command_words[0]);
         }
-    
-        let command = &args[0];
-        let params = &args[1..];
-        
+
+        let command = &command_words[0];
+        let params = &command_words[1..];
+
         // builtin completion: cd (directories only)
         if command == "cd" {
-            let ctx = CommandContext {
-                pwd: &mut self.pwd
-            };
+            let ctx = CommandContext { pwd: &mut self.pwd };
             return bins::complete_path(&ctx, params, 0, true);
         }
-        
-        if let Some(bin) = bins::find(command) && bin_exists(bin.name()) {
-            let mut ctx = CommandContext {
-                pwd: &mut self.pwd
-            };
-            let mut cands = bin.complete(&mut ctx, params, self.pos);
-            cands.sort_unstable();
-            cands.dedup();
-            return cands;
-        }
-    
+
         if let Some(bin) = bins::find(command) && bin_exists(bin.name()) {
             let mut ctx = CommandContext { pwd: &mut self.pwd };
             let mut cands = bin.complete(&mut ctx, params, self.pos);
@@ -453,59 +484,594 @@ impl Shell {
             cands.dedup();
             return cands;
         }
-    
+
         Vec::new()
     }
-    
+
     pub fn handle_cmd(&mut self, cmd: &str) -> String {
-        let Some(args) = shlex::split(cmd) else {
-            return "sheesh: Invalid quotes or escape sequence\r\n".to_owned();
+        self.handle_cmd_result(cmd).render()
+    }
+
+    fn handle_cmd_result(&mut self, cmd: &str) -> CommandResult {
+        let tokens = match tokenize_shell(cmd) {
+            Ok(tokens) => tokens,
+            Err(err) => return CommandResult::err(format!("sheesh: {}\r\n", err)),
         };
-        
-        if args.is_empty() {
-            return String::new();
+
+        if tokens.is_empty() {
+            return CommandResult::ok(String::new());
         }
-        
-        let command = &args[0];
-        let params = &args[1..];
-        
-        if command.as_str() == "cd" {
-            if params.is_empty() {
-                self.pwd = "/home/inparsian".to_owned();
-                return String::new();
+
+        let chains = match parse_command_chains(&tokens) {
+            Ok(chains) => chains,
+            Err(err) => return CommandResult::err(format!("sheesh: {}\r\n", err)),
+        };
+
+        let mut aggregate = String::new();
+        let mut last_status = 0;
+
+        for (idx, (maybe_cond, pipeline)) in chains.into_iter().enumerate() {
+            let should_run = if idx == 0 {
+                true
+            } else {
+                match maybe_cond.unwrap_or(ChainCondition::Always) {
+                    ChainCondition::Always => true,
+                    ChainCondition::AndIf => last_status == 0,
+                    ChainCondition::OrIf => last_status != 0,
+                }
+            };
+
+            if !should_run {
+                continue;
             }
 
-            let path = params[0].clone();
+            let result = self.execute_pipeline(pipeline);
+            last_status = result.status;
+            aggregate.push_str(&result.render());
+        }
+
+        CommandResult {
+            output: aggregate,
+            error: String::new(),
+            status: last_status,
+        }
+    }
+
+    fn execute_pipeline(&mut self, pipeline: Pipeline) -> CommandResult {
+        let mut piped_input: Option<String> = None;
+        let mut last = CommandResult::ok(String::new());
+
+        let last_index = pipeline.commands.len().saturating_sub(1);
+        for (i, cmd) in pipeline.commands.into_iter().enumerate() {
+            let result = self.execute_simple_command(cmd, piped_input.as_deref());
+            if i < last_index {
+                piped_input = Some(result.output.clone());
+            }
+            last = result;
+        }
+
+        last
+    }
+
+    fn execute_simple_command(&mut self, cmd: SimpleCommand, piped_input: Option<&str>) -> CommandResult {
+        let stdin_input = if let Some(path) = cmd.stdin.as_ref() {
             let reader = FILESYSTEM.read().unwrap();
-            if let Some(query) = reader.resolve_read(&path, Some(&self.pwd)) {
-                match &query.data {
-                    FilesystemData::Directory { .. } => {
-                        self.pwd = reader.resolve_path(&path, Some(&self.pwd)).unwrap();
-                        String::new()
-                    },
-                    FilesystemData::File { .. } |
-                    FilesystemData::SymbolicLink { .. } => {
-                        format!("cd: {}: Not a directory\r\n", path)
-                    },
-                }
-            } else {
-                format!("cd: {}: No such file or directory\r\n", path)
+            match reader.read_file(path, Some(&self.pwd)) {
+                Ok(content) => Some(String::from_utf8_lossy(content).into_owned()),
+                Err(err) => return CommandResult::err(format!("{}\r\n", err)),
             }
         } else {
-            // see if it's in our static bins, then find it in the fs to see if it can be run
-            if let Some(bin) = bins::find(command) && bin_exists(bin.name()) {
-                let mut ctx = CommandContext {
-                    pwd: &mut self.pwd,
-                };
+            piped_input.map(str::to_owned)
+        };
 
-                return bin.run(&mut ctx, params);
-            }
-
-            let mut unknown = "sheesh: Unknown command: ".to_owned();
-            unknown.push_str(command);
-            unknown.push_str("\r\n");
-            unknown
+        if let Some((path, append)) = cmd.stdout.as_ref()
+            && let Err(err) = prepare_redirect(path, *append, Some(&self.pwd))
+        {
+            return CommandResult::err(format!("{}\r\n", err));
         }
+
+        if let Some((path, append)) = cmd.stderr.as_ref()
+            && let Err(err) = prepare_redirect(path, *append, Some(&self.pwd))
+        {
+            return CommandResult::err(format!("{}\r\n", err));
+        }
+
+        if cmd.argv.is_empty() {
+            return CommandResult::err("syntax error near unexpected token\r\n");
+        }
+
+        let command = &cmd.argv[0];
+        let params = &cmd.argv[1..];
+
+        let mut result = if command == "cd" {
+            self.run_builtin_cd(params)
+        } else if let Some(bin) = bins::find(command) {
+            if bin_exists(bin.name()) {
+                let mut ctx = CommandContext { pwd: &mut self.pwd };
+                bin.run(&mut ctx, params, stdin_input.as_deref())
+            } else {
+                CommandResult {
+                    output: String::new(),
+                    error: format!("sheesh: Unknown command: {}\r\n", command),
+                    status: 127,
+                }
+            }
+        } else {
+            CommandResult {
+                output: String::new(),
+                error: format!("sheesh: Unknown command: {}\r\n", command),
+                status: 127,
+            }
+        };
+
+        if let Some((path, append)) = cmd.stdout {
+            if let Err(err) = write_redirect(&path, append, &result.output, Some(&self.pwd)) {
+                let _ = write!(result.error, "{}\r\n", err);
+                if result.status == 0 {
+                    result.status = 1;
+                }
+            } else {
+                result.output.clear();
+            }
+        }
+
+        if let Some((path, append)) = cmd.stderr {
+            if let Err(err) = write_redirect(&path, append, &result.error, Some(&self.pwd)) {
+                let _ = write!(result.error, "{}\r\n", err);
+                if result.status == 0 {
+                    result.status = 1;
+                }
+            } else {
+                result.error.clear();
+            }
+        }
+
+        result
+    }
+
+    fn run_builtin_cd(&mut self, params: &[String]) -> CommandResult {
+        if params.is_empty() {
+            self.pwd = "/home/inparsian".to_owned();
+            return CommandResult::ok(String::new());
+        }
+
+        let path = params[0].clone();
+        let reader = FILESYSTEM.read().unwrap();
+        if let Some(query) = reader.resolve_read(&path, Some(&self.pwd)) {
+            match &query.data {
+                FilesystemData::Directory { .. } => {
+                    self.pwd = reader.resolve_path(&path, Some(&self.pwd)).unwrap();
+                    CommandResult::ok(String::new())
+                },
+                FilesystemData::File { .. } | FilesystemData::SymbolicLink { .. } => {
+                    CommandResult::err(format!("cd: {}: Not a directory\r\n", path))
+                },
+            }
+        } else {
+            CommandResult::err(format!("cd: {}: No such file or directory\r\n", path))
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ShellOp {
+    AndIf,
+    OrIf,
+    Seq,
+    Pipe,
+    RedirectIn,
+    RedirectOut,
+    RedirectAppend,
+    RedirectErrOut,
+    RedirectErrAppend,
+}
+
+#[derive(Clone, Debug)]
+enum ShellToken {
+    Word(String),
+    Op(ShellOp),
+}
+
+#[derive(Clone, Copy, Debug)]
+enum ChainCondition {
+    Always,
+    AndIf,
+    OrIf,
+}
+
+#[derive(Clone, Debug)]
+struct SimpleCommand {
+    argv: Vec<String>,
+    stdin: Option<String>,
+    stdout: Option<(String, bool)>, // (path, append)
+    stderr: Option<(String, bool)>, // (path, append)
+}
+
+#[derive(Clone, Debug)]
+struct Pipeline {
+    commands: Vec<SimpleCommand>,
+}
+
+fn completion_segment(before_cursor: &str) -> String {
+    let mut in_single = false;
+    let mut in_double = false;
+    let mut escape = false;
+    let mut last_start = 0_usize;
+    let chars: Vec<char> = before_cursor.chars().collect();
+    let mut i = 0_usize;
+
+    while i < chars.len() {
+        let ch = chars[i];
+
+        if escape {
+            escape = false;
+            i += 1;
+            continue;
+        }
+
+        if in_single {
+            if ch == '\'' {
+                in_single = false;
+            }
+            i += 1;
+            continue;
+        }
+
+        if in_double {
+            match ch {
+                '\\' => escape = true,
+                '"' => in_double = false,
+                _ => {}
+            }
+            i += 1;
+            continue;
+        }
+
+        match ch {
+            '\\' => escape = true,
+            '\'' => in_single = true,
+            '"' => in_double = true,
+            '|' if i + 1 < chars.len() && chars[i + 1] == '|' => {
+                last_start = i + 2;
+                i += 1;
+            }
+            '|' | ';' => last_start = i + 1,
+            '&' if i + 1 < chars.len() && chars[i + 1] == '&' => {
+                last_start = i + 2;
+                i += 1;
+            }
+            _ => {}
+        }
+
+        i += 1;
+    }
+
+    before_cursor[last_start..].to_owned()
+}
+
+fn tokenize_shell(input: &str) -> Result<Vec<ShellToken>, String> {
+    let mut tokens = Vec::new();
+    let chars: Vec<char> = input.chars().collect();
+    let mut i = 0_usize;
+
+    while i < chars.len() {
+        let ch = chars[i];
+
+        if ch.is_whitespace() {
+            i += 1;
+            continue;
+        }
+
+        if i + 2 < chars.len() && chars[i] == '2' && chars[i + 1] == '>' && chars[i + 2] == '>' {
+            tokens.push(ShellToken::Op(ShellOp::RedirectErrAppend));
+            i += 3;
+            continue;
+        }
+
+        if i + 1 < chars.len() {
+            match (chars[i], chars[i + 1]) {
+                ('&', '&') => {
+                    tokens.push(ShellToken::Op(ShellOp::AndIf));
+                    i += 2;
+                    continue;
+                }
+                ('|', '|') => {
+                    tokens.push(ShellToken::Op(ShellOp::OrIf));
+                    i += 2;
+                    continue;
+                }
+                ('>', '>') => {
+                    tokens.push(ShellToken::Op(ShellOp::RedirectAppend));
+                    i += 2;
+                    continue;
+                }
+                ('2', '>') => {
+                    tokens.push(ShellToken::Op(ShellOp::RedirectErrOut));
+                    i += 2;
+                    continue;
+                }
+                _ => {}
+            }
+        }
+
+        match ch {
+            ';' => {
+                tokens.push(ShellToken::Op(ShellOp::Seq));
+                i += 1;
+            }
+            '|' => {
+                tokens.push(ShellToken::Op(ShellOp::Pipe));
+                i += 1;
+            }
+            '<' => {
+                tokens.push(ShellToken::Op(ShellOp::RedirectIn));
+                i += 1;
+            }
+            '>' => {
+                tokens.push(ShellToken::Op(ShellOp::RedirectOut));
+                i += 1;
+            }
+            '&' => return Err("syntax error near unexpected token '&'".to_owned()),
+            _ => {
+                let mut word = String::new();
+                let mut in_single = false;
+                let mut in_double = false;
+                let mut escape = false;
+
+                while i < chars.len() {
+                    let c = chars[i];
+
+                    if escape {
+                        word.push(c);
+                        escape = false;
+                        i += 1;
+                        continue;
+                    }
+
+                    if in_single {
+                        if c == '\'' {
+                            in_single = false;
+                        } else {
+                            word.push(c);
+                        }
+                        i += 1;
+                        continue;
+                    }
+
+                    if in_double {
+                        match c {
+                            '\\' => escape = true,
+                            '"' => in_double = false,
+                            _ => word.push(c),
+                        }
+                        i += 1;
+                        continue;
+                    }
+
+                    match c {
+                        '\\' => {
+                            escape = true;
+                            i += 1;
+                        }
+                        '\'' => {
+                            in_single = true;
+                            i += 1;
+                        }
+                        '"' => {
+                            in_double = true;
+                            i += 1;
+                        }
+                        delim if delim.is_whitespace() || matches!(delim, ';' | '|' | '<' | '>' | '&') => {
+                            break;
+                        }
+                        _ => {
+                            word.push(c);
+                            i += 1;
+                        }
+                    }
+                }
+
+                if escape || in_single || in_double {
+                    return Err("Invalid quotes or escape sequence".to_owned());
+                }
+
+                if !word.is_empty() {
+                    tokens.push(ShellToken::Word(word));
+                }
+            }
+        }
+    }
+
+    Ok(tokens)
+}
+
+fn parse_command_chains(tokens: &[ShellToken]) -> Result<Vec<(Option<ChainCondition>, Pipeline)>, String> {
+    let mut i = 0_usize;
+    let mut out = Vec::new();
+    let mut pending_cond: Option<ChainCondition> = None;
+
+    while i < tokens.len() {
+        let (pipeline, next_i) = parse_pipeline(tokens, i)?;
+        out.push((pending_cond, pipeline));
+        pending_cond = None;
+        i = next_i;
+
+        if i >= tokens.len() {
+            break;
+        }
+
+        match tokens.get(i) {
+            Some(ShellToken::Op(ShellOp::Seq)) => {
+                pending_cond = Some(ChainCondition::Always);
+                i += 1;
+            }
+            Some(ShellToken::Op(ShellOp::AndIf)) => {
+                pending_cond = Some(ChainCondition::AndIf);
+                i += 1;
+            }
+            Some(ShellToken::Op(ShellOp::OrIf)) => {
+                pending_cond = Some(ChainCondition::OrIf);
+                i += 1;
+            }
+            Some(ShellToken::Op(ShellOp::Pipe)) => {
+                return Err("syntax error near unexpected token '|'".to_owned());
+            }
+            Some(ShellToken::Op(ShellOp::RedirectIn)) => {
+                return Err("syntax error near unexpected token '<'".to_owned());
+            }
+            Some(ShellToken::Op(ShellOp::RedirectOut)) => {
+                return Err("syntax error near unexpected token '>'".to_owned());
+            }
+            Some(ShellToken::Op(ShellOp::RedirectAppend)) => {
+                return Err("syntax error near unexpected token '>>'".to_owned());
+            }
+            Some(ShellToken::Op(ShellOp::RedirectErrOut)) => {
+                return Err("syntax error near unexpected token '2>'".to_owned());
+            }
+            Some(ShellToken::Op(ShellOp::RedirectErrAppend)) => {
+                return Err("syntax error near unexpected token '2>>'".to_owned());
+            }
+            Some(ShellToken::Word(w)) => {
+                return Err(format!("syntax error near unexpected token '{}'", w));
+            }
+            None => break,
+        }
+    }
+
+    if pending_cond.is_some() {
+        return Err("syntax error near unexpected token 'newline'".to_owned());
+    }
+
+    Ok(out)
+}
+
+fn parse_pipeline(tokens: &[ShellToken], mut i: usize) -> Result<(Pipeline, usize), String> {
+    let mut commands = Vec::new();
+
+    loop {
+        let (cmd, next_i) = parse_simple_command(tokens, i)?;
+        commands.push(cmd);
+        i = next_i;
+
+        match tokens.get(i) {
+            Some(ShellToken::Op(ShellOp::Pipe)) => {
+                i += 1;
+            }
+            _ => break,
+        }
+    }
+
+    if commands.is_empty() {
+        return Err("syntax error near unexpected token '|'".to_owned());
+    }
+
+    Ok((Pipeline { commands }, i))
+}
+
+fn parse_simple_command(tokens: &[ShellToken], mut i: usize) -> Result<(SimpleCommand, usize), String> {
+    let mut argv = Vec::new();
+    let mut stdin = None;
+    let mut stdout = None;
+    let mut stderr = None;
+
+    while let Some(token) = tokens.get(i) {
+        match token {
+            ShellToken::Word(w) => {
+                argv.push(w.clone());
+                i += 1;
+            }
+            ShellToken::Op(ShellOp::RedirectIn) => {
+                i += 1;
+                let Some(ShellToken::Word(path)) = tokens.get(i) else {
+                    return Err("syntax error near unexpected token '<'".to_owned());
+                };
+                stdin = Some(path.clone());
+                i += 1;
+            }
+            ShellToken::Op(ShellOp::RedirectOut) => {
+                i += 1;
+                let Some(ShellToken::Word(path)) = tokens.get(i) else {
+                    return Err("syntax error near unexpected token '>'".to_owned());
+                };
+                stdout = Some((path.clone(), false));
+                i += 1;
+            }
+            ShellToken::Op(ShellOp::RedirectAppend) => {
+                i += 1;
+                let Some(ShellToken::Word(path)) = tokens.get(i) else {
+                    return Err("syntax error near unexpected token '>>'".to_owned());
+                };
+                stdout = Some((path.clone(), true));
+                i += 1;
+            }
+            ShellToken::Op(ShellOp::RedirectErrOut) => {
+                i += 1;
+                let Some(ShellToken::Word(path)) = tokens.get(i) else {
+                    return Err("syntax error near unexpected token '2>'".to_owned());
+                };
+                stderr = Some((path.clone(), false));
+                i += 1;
+            }
+            ShellToken::Op(ShellOp::RedirectErrAppend) => {
+                i += 1;
+                let Some(ShellToken::Word(path)) = tokens.get(i) else {
+                    return Err("syntax error near unexpected token '2>>'".to_owned());
+                };
+                stderr = Some((path.clone(), true));
+                i += 1;
+            }
+            ShellToken::Op(ShellOp::Pipe | ShellOp::AndIf | ShellOp::OrIf | ShellOp::Seq) => break,
+        }
+    }
+
+    if argv.is_empty() {
+        return Err("syntax error near unexpected token".to_owned());
+    }
+
+    Ok((SimpleCommand { argv, stdin, stdout, stderr }, i))
+}
+
+fn prepare_redirect(path: &str, append: bool, pwd: Option<&str>) -> Result<(), String> {
+    let mut fs = FILESYSTEM.write().unwrap();
+
+    if let Some(entry) = fs.resolve_read(path, pwd) {
+        return match &entry.data {
+            FilesystemData::File { .. } => {
+                if append {
+                    Ok(())
+                } else {
+                    // `>` truncates before command execution.
+                    fs.write_file(path, pwd, b"")
+                }
+            }
+            _ => Err(format!("Path is not a file: {}", path)),
+        };
+    }
+
+    // Target doesn't exist: create it as an empty file before command execution.
+    fs.create_file(path, pwd, b"")
+}
+
+fn write_redirect(path: &str, append: bool, data: &str, pwd: Option<&str>) -> Result<(), String> {
+    let mut fs = FILESYSTEM.write().unwrap();
+
+    if append {
+        if let Some(entry) = fs.resolve_read(path, pwd) {
+            match &entry.data {
+                FilesystemData::File { .. } => {
+                    let mut existing = fs.read_file(path, pwd)?.to_vec();
+                    existing.extend_from_slice(data.as_bytes());
+                    fs.write_file(path, pwd, &existing)
+                }
+                _ => Err(format!("Path is not a file: {}", path)),
+            }
+        } else {
+            fs.create_file(path, pwd, data.as_bytes())
+        }
+    } else if fs.resolve_read(path, pwd).is_some() {
+        fs.write_file(path, pwd, data.as_bytes())
+    } else {
+        fs.create_file(path, pwd, data.as_bytes())
     }
 }
 

@@ -1,7 +1,7 @@
 use std::fmt::Write as _;
 
 use crate::consts::{ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_CYAN, ANSI_DIM, ANSI_RESET};
-use super::{Command, CommandContext};
+use super::{Command, CommandContext, CommandResult};
 
 pub struct Neofetch;
 pub const NEOFETCH: Neofetch = Neofetch;
@@ -25,7 +25,7 @@ impl Command for Neofetch {
         &["fastfetch"]
     }
 
-    fn run(&self, _ctx: &mut CommandContext, _args: &[String]) -> String {
+    fn run(&self, _ctx: &mut CommandContext, _args: &[String], _stdin: Option<&str>) -> CommandResult {
         let fields = [
             ("OS", "Arch Linux x86_64"),
             ("Host", "Samsung Galaxy Note 7"),
@@ -63,7 +63,7 @@ impl Command for Neofetch {
             let _ = write!(output, "{}{}{}{}     {}{}\r\n", ANSI_RESET, ANSI_BOLD, ANSI_BRIGHT_CYAN, logo, ANSI_RESET, line);
         }
 
-        output
+        CommandResult::ok(output)
     }
 
     fn complete(&self, _ctx: &mut CommandContext, _args: &[String], _cursor: usize) -> Vec<String> {
