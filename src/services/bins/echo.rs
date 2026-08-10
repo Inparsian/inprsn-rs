@@ -13,7 +13,39 @@ impl Command for Echo {
     }
 
     fn run(&self, _ctx: &mut CommandContext, args: &[String], _stdin: Option<&str>) -> CommandResult {
-        CommandResult::ok(format!("{}\r\n", args.join(" ")))
+        let mut newline = true;
+        let mut interpret_escapes = false;
+        let mut i = 0;
+
+        while i < args.len() {
+            match args[i].as_str() {
+                "-n" => newline = false,
+                "-e" => interpret_escapes = true,
+                "-ne" | "-en" => {
+                    newline = false;
+                    interpret_escapes = true;
+                }
+                _ => break,
+            }
+            i += 1;
+        }
+
+        let mut output = args[i..].join(" ");
+
+        if interpret_escapes {
+            output = output
+                .replace(r"\\", "\\")
+                .replace(r"\n", "\n")
+                .replace(r"\r", "\r")
+                .replace(r"\t", "\t")
+                .replace(r"\0", "\0");
+        }
+
+        if newline {
+            output.push_str("\r\n");
+        }
+
+        CommandResult::ok(output)
     }
 
     fn complete(&self, _ctx: &mut CommandContext, _args: &[String], _cursor: usize) -> Vec<String> {
