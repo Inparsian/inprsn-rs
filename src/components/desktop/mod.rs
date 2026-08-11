@@ -3,7 +3,7 @@ pub mod icon;
 use icon::DesktopIcon;
 
 use dioxus::{core::spawn_forever, prelude::*};
-use dioxus_free_icons::icons::ld_icons::{LdActivity, LdCat, LdCircleX, LdDrama, LdGrid3x3, LdTerminal};
+use dioxus_free_icons::icons::ld_icons::{LdActivity, LdCat, LdCircleX, LdDrama, LdFolder, LdGrid3x3, LdTerminal};
 
 use crate::{sys, apps, crazyerror};
 
@@ -56,12 +56,22 @@ pub fn Desktop() -> Element {
                             sys::spawn_process(apps::terminal::new_terminal_instance());
                         }
                     },
+
+                    DesktopIcon {
+                        id: 3,
+                        selected_id,
+                        label: "file thing",
+                        icon: LdFolder,
+                        on_open: move |()| {
+                            sys::spawn_process(apps::filething::new_filething_instance());
+                        }
+                    },
                 },
                 
                 div {
                     class: "desktop-icons-row",
                     DesktopIcon {
-                        id: 3,
+                        id: 4,
                         selected_id,
                         label: "crazy error",
                         icon: LdCircleX,
@@ -71,7 +81,7 @@ pub fn Desktop() -> Element {
                     },
                     
                     DesktopIcon {
-                        id: 4,
+                        id: 5,
                         selected_id,
                         label: "hydra",
                         icon: LdDrama,
@@ -84,7 +94,7 @@ pub fn Desktop() -> Element {
                 div {
                     class: "desktop-icons-row",
                     DesktopIcon {
-                        id: 5,
+                        id: 6,
                         selected_id,
                         label: "tictactoe",
                         icon: LdGrid3x3,

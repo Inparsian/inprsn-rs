@@ -3,3 +3,4 @@ pub mod hydra;
 pub mod tictactoe;
 pub mod taskmanager;
 pub mod terminal;
+pub mod filething;
