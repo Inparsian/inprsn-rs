@@ -1,10 +1,28 @@
 mod img;
 
+pub mod encoding;
+
 use std::sync::{LazyLock, RwLock};
+use dioxus::logger::tracing::{error, info};
 
-pub static FILESYSTEM: LazyLock<RwLock<Filesystem>> = LazyLock::new(|| RwLock::new(Filesystem::init()));
+pub static FILESYSTEM: LazyLock<RwLock<Filesystem>> = LazyLock::new(|| {
+    // see if we have our fs in local storage, if so, we can get our fs from that
+    let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+    let fs = if let Some(encoded) = storage.get("fs").unwrap()
+        && let Ok(cfs) = Filesystem::decode(encoded.as_str()) 
+    {
+        let entries: usize = cfs.root.iter().map(|e| e.size_entries()).sum();
+        let bytes: usize = cfs.root.iter().map(|e| e.size_bytes()).sum();
+        info!("Filesystem found in local storage ({} bytes, {} entries), restoring...", bytes, entries);
+        cfs
+    } else {
+        info!("No filesystem found in local storage, initializing...");
+        Filesystem::init()
+    };
+    RwLock::new(fs)
+});
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FilesystemData {
     File {
         content: Vec<u8>,
@@ -19,7 +37,7 @@ pub enum FilesystemData {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FilesystemEntry {
     pub name: String,
     pub data: FilesystemData,
@@ -39,6 +57,21 @@ impl FilesystemEntry {
             data: FilesystemData::Directory { children },
         }
     }
+
+    pub fn size_entries(&self) -> usize {
+        match &self.data {
+            FilesystemData::Directory { children } => children.iter().map(|c| c.size_entries()).sum(),
+            FilesystemData::File { .. } | FilesystemData::SymbolicLink { .. } => 1,
+        }
+    }
+
+    pub fn size_bytes(&self) -> usize {
+        match &self.data {
+            FilesystemData::File { content } => content.len(),
+            FilesystemData::Directory { children } => children.iter().map(|c| c.size_bytes()).sum(),
+            FilesystemData::SymbolicLink { .. } => 0,
+        }
+    }
 }
 
 pub struct Filesystem {
@@ -49,6 +82,23 @@ impl Filesystem {
     pub fn init() -> Self {
         Self {
             root: img::image(),
+        }
+    }
+    
+    pub fn encode(&self) -> String {
+        encoding::encode(self)
+    }
+
+    pub fn decode(value: &str) -> Result<Self, encoding::EncodingError> {
+        encoding::decode(value)
+    }
+
+    pub fn save_locally(&self) {
+        let encoded = self.encode();
+
+        let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+        if let Err(e) = storage.set("fs", encoded.as_str()) {
+            error!("Failed to save fs: {:?}", e);
         }
     }
 
@@ -170,6 +220,7 @@ impl Filesystem {
                     name: file_name.to_owned(),
                     data: FilesystemData::File { content: data.to_vec() },
                 });
+                self.save_locally();
                 Ok(())
             } else {
                 Err(format!("Path is not a directory: {}", path))
@@ -193,6 +244,7 @@ impl Filesystem {
                     name: dir_name.to_owned(),
                     data: FilesystemData::Directory { children: Vec::new() },
                 });
+                self.save_locally();
                 Ok(())
             } else {
                 Err(format!("Path is not a directory: {}", path))
@@ -221,6 +273,7 @@ impl Filesystem {
             }) => {
                 content.clear();
                 content.extend_from_slice(data);
+                self.save_locally();
                 Ok(())
             }
             Some(_) => Err(format!("Path is not a file: {}", path)),
@@ -270,11 +323,13 @@ impl Filesystem {
             }
         };
 
-        children.iter()
+        let res = children.iter()
             .position(|entry| entry.name == *name)
             .map_or_else(|| Err(format!("Path does not exist: {}", path)), |idx| {
                 children.remove(idx);
                 Ok(())
-            })
+            });
+        self.save_locally();
+        res
     }
 }
