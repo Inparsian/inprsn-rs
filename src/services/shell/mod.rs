@@ -8,6 +8,7 @@ mod completion;
 mod execution;
 mod parser;
 mod redirect;
+mod history;
 
 struct CompletionState {
     start: usize,
@@ -21,7 +22,6 @@ pub struct Shell {
     pub pos: usize,
     completion_state: Option<CompletionState>,
     completion_menu_lines: usize,
-    // This is temporary until I establish a persistent VFS with a .sheesh_history file
     pub history: Vec<String>,
     pub history_pos: Option<usize>,
     // Stores the current line whilst browsing history
@@ -36,7 +36,7 @@ impl Default for Shell {
         let sh = Self {
             pwd: "/home/inparsian".to_owned(),
             buffer: String::new(),
-            history: Vec::new(),
+            history: history::read_history(),
             history_pos: None,
             temp_buffer: None,
             pos: 0,
@@ -52,6 +52,10 @@ impl Default for Shell {
 }
 
 impl Shell {
+    fn sync_history(&mut self) {
+        self.history = history::read_history();
+    }
+    
     fn prompt(&self) -> String {
         let path = if self.pwd == "/home/inparsian" {
             "~"
@@ -172,7 +176,7 @@ impl Shell {
             "\r" => {
                 let cmd = self.buffer.clone();
                 if !cmd.is_empty() {
-                    self.history.push(cmd.clone());
+                    history::add_to_history(&cmd);
                 }
 
                 self.history_pos = None;
@@ -183,6 +187,7 @@ impl Shell {
                 let out = self.handle_cmd(&cmd);
                 self.emit(out);
                 self.emit(self.prompt());
+                self.sync_history();
             }
 
             "\u{7f}" => {
