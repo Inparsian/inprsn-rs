@@ -43,6 +43,25 @@
     }
 }
 
+/* Mobile support, windows will always be maximized */
+@media (max-width: 800px) or (max-height: 400px) {
+    .window {
+        left: 0px !important;
+        top: 0px !important;
+        transform: none !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .window-title-bar-buttons #maximize {
+        display: none;
+    }
+
+    .window-title-bar-draggable {
+        cursor: default !important;
+    }
+}
+
 body {
     background-color: #131313;
     color: #e2e2e2;

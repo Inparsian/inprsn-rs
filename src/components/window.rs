@@ -1,6 +1,7 @@
 use dioxus::html::geometry::{PageSpace, euclid::Point2D};
 use dioxus::prelude::*;
 
+use crate::MOBILE;
 use crate::sys::{self, WindowInstance};
 use crate::enums::{Corner, ScreenCoordinates};
 use crate::components::BAR_HEIGHT_PX;
@@ -17,7 +18,7 @@ pub fn Window(props: WindowProps) -> Element {
     let mut drag_offset = use_signal(|| (0, 0));
     let mut resize_offset = use_signal(|| (0, 0));
     
-    let (left, top, transform) = if props.instance.maximized {
+    let (left, top, transform) = if props.instance.maximized || *MOBILE.read() {
         ("0px".to_owned(), "0px".to_owned(), "none".to_owned())
     } else {
         match props.instance.props.position {
@@ -144,7 +145,8 @@ pub fn Window(props: WindowProps) -> Element {
     };
     
     rsx! {
-        if props.instance.dragging {
+        // This shouldn't be draggable/resizable if we're in mobile mode
+        if props.instance.dragging && !*MOBILE.read() {
             div {
                 style: "position: fixed; inset: 0; z-index: 9999; cursor: grabbing;",
                 onmousemove: move |evt| {
@@ -175,7 +177,7 @@ pub fn Window(props: WindowProps) -> Element {
             }
         }
         
-        if props.instance.resize_corner.is_some() {
+        if props.instance.resize_corner.is_some() && !*MOBILE.read() {
             div {
                 style: {
                     let cursor = match props.instance.resize_corner {
@@ -222,7 +224,7 @@ pub fn Window(props: WindowProps) -> Element {
                 classes.join(" ")
             },
             style: {
-                let (width, height) = if props.instance.maximized {
+                let (width, height) = if props.instance.maximized || *MOBILE.read() {
                     ("100%".to_owned(), format!("calc(100% - {BAR_HEIGHT_PX}px)"))
                 } else {
                     match props.instance.props.size {
@@ -240,7 +242,7 @@ pub fn Window(props: WindowProps) -> Element {
             // inner div for animation & styling purposes so transform does not break % math
             div {
                 class: "window-inner",
-                if !props.instance.maximized && props.instance.props.resizable {
+                if !props.instance.maximized && !*MOBILE.read() && props.instance.props.resizable {
                     for corner in Corner::all() {
                         div {
                             class: {
@@ -280,7 +282,7 @@ pub fn Window(props: WindowProps) -> Element {
                         },
                         onmousedown: move |evt| {
                             evt.prevent_default();
-                            if !props.instance.maximized {
+                            if !props.instance.maximized && !*MOBILE.read() {
                                 let element_coordinates = evt.element_coordinates();
                                 drag_offset.set((element_coordinates.x as i32, element_coordinates.y as i32));
                                 sys::with_window_mut(props.instance.id, |window| window.dragging = true);
@@ -296,7 +298,7 @@ pub fn Window(props: WindowProps) -> Element {
                             id: "iconify",
                             onclick: move |_| sys::with_window_mut(props.instance.id, |window| window.iconified = true),
                         }
-                        if props.instance.props.resizable {
+                        if props.instance.props.resizable && !*MOBILE.read() {
                             button {
                                 id: "maximize",
                                 class: if props.instance.maximized {

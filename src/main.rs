@@ -25,7 +25,7 @@ const TAILWIND_CSS: Asset = asset!("/assets/styles/tailwind.css");
 
 // State
 pub const KERNEL_PANIC: GlobalSignal<bool> = GlobalSignal::new(|| false);
-pub const ALT_PRESSED: GlobalSignal<bool> = GlobalSignal::new(|| false);
+pub const MOBILE: GlobalSignal<bool> = GlobalSignal::new(|| false);
 
 // Router
 #[derive(Routable, Clone, PartialEq, Eq)]
@@ -43,43 +43,32 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    // global key states
+    // mobile mode
     use_effect(move || {
-        use wasm_bindgen::closure::Closure;
         use wasm_bindgen::JsCast as _;
+        
+        let update_mobile = move || {
+            let Some(window) = web_sys::window() else {
+                return;
+            };
 
-        let Some(window) = web_sys::window() else {
-            return;
+            let width = window.inner_width().unwrap().as_f64();
+            let height = window.inner_height().unwrap().as_f64();
+            let mobile = width <= Some(800.0) || height <= Some(400.0);
+            *MOBILE.write() = mobile;
         };
 
-        // keydown
-        let keydown_cb = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
-            if e.key() == "Alt" || e.key() == "AltGraph" {
-                *ALT_PRESSED.write() = true;
-            }
-        }));
-        let _ = window.add_event_listener_with_callback(
-            "keydown",
-            keydown_cb.as_ref().unchecked_ref(),
-        );
+        update_mobile();
 
-        // keyup
-        let keyup_cb = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
-            if e.key() == "Alt" || e.key() == "AltGraph" {
-                *ALT_PRESSED.write() = false;
-            }
-        }));
-        let _ = window.add_event_listener_with_callback("keyup", keyup_cb.as_ref().unchecked_ref());
+        let window = web_sys::window().unwrap();
+        let listener = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+            update_mobile();
+        }) as Box<dyn FnMut()>);
 
-        // in case of alt+tab / focus loss
-        let blur_cb = Closure::<dyn FnMut(web_sys::FocusEvent)>::wrap(Box::new(move |_e: web_sys::FocusEvent| {
-            *ALT_PRESSED.write() = false;
-        }));
-        let _ = window.add_event_listener_with_callback("blur", blur_cb.as_ref().unchecked_ref());
-
-        keydown_cb.forget();
-        keyup_cb.forget();
-        blur_cb.forget();
+        window
+            .add_event_listener_with_callback("resize", listener.as_ref().unchecked_ref())
+            .unwrap();
+        listener.forget();
     });
 
     rsx! {
