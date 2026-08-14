@@ -135,6 +135,13 @@ fn KernelPanic() -> Element {
 
 #[component]
 fn Simple() -> Element {
+    use chrono::TimeZone as _;
+    
+    let birth = chrono::Utc.with_ymd_and_hms(2005, 7, 12, 0, 0, 0).unwrap();
+    let now = chrono::Utc::now();
+    let since = now.signed_duration_since(birth);
+    let age = since.num_milliseconds() as f64 / 31_557_600_000.0;
+    
     rsx! {
         document::Link { rel: "stylesheet", href: SIMPLE_CSS }
         document::Link { rel: "stylesheet", href: FONTS_CSS }
@@ -152,7 +159,9 @@ fn Simple() -> Element {
             }
             
             p {
-                "hi, i'm inparsian. i'm some dumb 20 y.o. american dude who makes software"
+                "hi, i'm inparsian. i'm some dumb "
+                span { "{age:.9}" }
+                " y.o. american dude who makes software"
             }
             
             h2 {
